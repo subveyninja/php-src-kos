@@ -1,6 +1,7 @@
 --TEST--
 Bug #60120 (proc_open hangs when data in stdin/out/err is getting larger or equal to 2048)
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.PROC_OPEN test requiring proc_open function"); ?>
 <?php
 $php = getenv('TEST_PHP_EXECUTABLE');
 if (!$php) {

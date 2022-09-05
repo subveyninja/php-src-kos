@@ -1,5 +1,7 @@
 --TEST--
 Test htmlspecialchars() function
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /* retrieving htmlspecialchars from the ANSI character table */

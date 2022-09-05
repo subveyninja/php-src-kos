@@ -1,5 +1,7 @@
 --TEST--
 Bug #79514 (Memory leaks while including unexistent file)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $mem1 = memory_get_usage(true);

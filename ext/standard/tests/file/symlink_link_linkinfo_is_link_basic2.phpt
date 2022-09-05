@@ -1,6 +1,7 @@
 --TEST--
 Test symlink(), linkinfo(), link() and is_link() functions: basic functionality - link to dirs
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (PHP_OS_FAMILY === 'Windows') {
     require_once __DIR__ . '/windows_links/common.inc';

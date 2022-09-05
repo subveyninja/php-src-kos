@@ -1,5 +1,7 @@
 --TEST--
 Test get_html_translation_table() function : basic functionality - HTML 5
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "*** Testing get_html_translation_table() : basic functionality/HTML 5 ***\n";

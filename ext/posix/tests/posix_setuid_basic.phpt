@@ -5,6 +5,7 @@ Marco Fabbri mrfabbri@gmail.com
 Francesco Fullone ff@ideato.it
 #PHPTestFest Cesena Italia on 2009-06-20
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS setuid() not implemented"); ?>
 <?php
         if(!extension_loaded("posix")) print "skip - POSIX extension not loaded";
 ?>

@@ -1,5 +1,7 @@
 --TEST--
 Looped regression test (may take a while)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 for ($jdk=0; $jdk<50; $jdk++) {

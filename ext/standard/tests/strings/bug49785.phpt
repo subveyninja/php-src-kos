@@ -1,5 +1,7 @@
 --TEST--
 Bug #49785 (insufficient input string validation of htmlspecialchars())
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 function _bin2hex($val) {

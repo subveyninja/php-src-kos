@@ -1,6 +1,7 @@
 --TEST--
 Test setlocale() function : usage variations - Setting all available locales in the platform
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 <?php
 if (substr(PHP_OS, 0, 3) == 'WIN') {
     die('skip Not valid for windows');

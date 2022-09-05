@@ -1,6 +1,7 @@
 --TEST--
 posix_setrlimit(): Basic tests
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS setrlimit() not implemented"); ?>
 <?php
 if (!extension_loaded('posix')) die('skip - POSIX extension not loaded');
 if (!function_exists('posix_setrlimit')) die('skip posix_setrlimit() not found');

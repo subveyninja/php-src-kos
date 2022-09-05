@@ -1,6 +1,7 @@
 --TEST--
 Phar: SLOW TEST bug #13727: "Number of files in the Phar" limited to 2042
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php if (!extension_loaded("phar")) die("skip"); ?>
 <?php if (getenv('SKIP_SLOW_TESTS')) die('skip'); ?>
 --INI--

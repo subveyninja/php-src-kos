@@ -1,6 +1,7 @@
 --TEST--
 iconv_mime_encode()
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php extension_loaded('iconv') or die('skip iconv extension is not available'); ?>
 --INI--
 iconv.internal_charset=iso-8859-1

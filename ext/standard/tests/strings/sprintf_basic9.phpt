@@ -1,5 +1,7 @@
 --TEST--
 Test sprintf() function : basic functionality - hexadecimal format
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "*** Testing sprintf() : basic functionality - using hexadecimal format ***\n";

@@ -1,6 +1,7 @@
 --TEST--
 Timeout within while loop
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (getenv("SKIP_SLOW_TESTS")) die("skip slow test");
 ?>

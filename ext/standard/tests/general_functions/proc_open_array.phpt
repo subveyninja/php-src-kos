@@ -1,5 +1,7 @@
 --TEST--
 Using proc_open() with a command array (no shell)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

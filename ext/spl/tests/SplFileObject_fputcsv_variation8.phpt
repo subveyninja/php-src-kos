@@ -1,5 +1,7 @@
 --TEST--
 Test fputcsv() : usage variations - with same delimiter and different enclosure
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

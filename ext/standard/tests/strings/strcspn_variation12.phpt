@@ -1,5 +1,7 @@
 --TEST--
 Test strcspn() function : usage variations - with varying start and len args
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /*

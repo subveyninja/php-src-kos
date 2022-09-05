@@ -1,5 +1,7 @@
 --TEST--
 proc_open does not leak memory when called with wrong resource type in descriptorspec
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.PROC_OPEN test requiring proc_open function"); ?>
 --FILE--
 <?php
     $context = stream_context_create();

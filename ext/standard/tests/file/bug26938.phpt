@@ -1,5 +1,7 @@
 --TEST--
 Bug #26938 (exec does not read consecutive long lines correctly)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 --FILE--
 <?php
 $out = array();

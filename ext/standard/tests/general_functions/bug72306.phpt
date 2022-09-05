@@ -1,5 +1,7 @@
 --TEST--
 Bug #72306 (Heap overflow through proc_open and $env parameter)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 class moo {

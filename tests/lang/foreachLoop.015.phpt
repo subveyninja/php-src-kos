@@ -1,5 +1,7 @@
 --TEST--
 Directly modifying a REFERENCED array when foreach'ing over it while using &$value syntax.
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

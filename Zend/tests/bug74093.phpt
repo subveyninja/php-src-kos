@@ -1,6 +1,7 @@
 --TEST--
 Bug #74093 (Maximum execution time of n+2 seconds exceed not written in error_log)
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (getenv("SKIP_SLOW_TESTS")) die("skip slow test");
 if (PHP_ZTS) die("skip only for no-zts build");

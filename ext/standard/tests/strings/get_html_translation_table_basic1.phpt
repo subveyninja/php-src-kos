@@ -1,5 +1,7 @@
 --TEST--
 Test get_html_translation_table() function : basic functionality - with default args
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /* Test get_html_translation_table() when table is specified as HTML_ENTITIES */

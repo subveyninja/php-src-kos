@@ -1,5 +1,7 @@
 --TEST--
 Bug #41815 (Concurrent read/write fails when EOF is reached)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

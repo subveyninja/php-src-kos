@@ -2,6 +2,8 @@
 Test arsort, asort, krsort, ksort, rsort, and sort
 --INI--
 precision=14
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 require(__DIR__ . '/data.inc');

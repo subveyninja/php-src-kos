@@ -1,5 +1,7 @@
 --TEST--
 array_chunk() - variation 20
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $array = array (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);

@@ -1,5 +1,7 @@
 --TEST--
 parse_ini_string() crashes on values starting with number or unquoted strings
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

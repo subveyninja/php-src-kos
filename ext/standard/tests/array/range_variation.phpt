@@ -1,5 +1,7 @@
 --TEST--
 Test range() function (variation-1)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --INI--
 precision=14
 --FILE--

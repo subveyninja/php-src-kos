@@ -1,6 +1,7 @@
 --TEST--
 exec, system, passthru  — Basic command execution functions
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 // If this does not work for Windows, please uncomment or fix test
 // if(substr(PHP_OS, 0, 3) == "WIN") die("skip not for Windows");

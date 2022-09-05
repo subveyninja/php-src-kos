@@ -1,6 +1,7 @@
 --TEST--
 proc_open
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (!is_executable("/bin/cat")) echo "skip";
 if (!function_exists("proc_open")) echo "skip proc_open() is not available";

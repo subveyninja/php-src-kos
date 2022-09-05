@@ -3,6 +3,7 @@ Test pow() function : usage variations - different data types as $base argument
 --INI--
 precision = 14
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (PHP_INT_SIZE != 8) die("skip this test is for 64bit platform only");
 ?>

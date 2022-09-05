@@ -6,6 +6,7 @@ Fabio Fabbrucci (fabbrucci@grupporetina.com)
 Michele Orselli (mo@ideato.it)
 Simone Gentili (sensorario@gmail.com)
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
     if(!function_exists('proc_nice')) die("skip. proc_nice not available ");
     if(!function_exists('posix_geteuid')) die("skip. posix_geteuid not available ");

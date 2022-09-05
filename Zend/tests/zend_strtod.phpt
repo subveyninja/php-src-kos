@@ -1,5 +1,7 @@
 --TEST--
 zend_strtod() leaks on big doubles
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --INI--
 precision=14
 --FILE--

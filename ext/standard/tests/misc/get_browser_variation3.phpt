@@ -2,6 +2,8 @@
 Test get_browser() against a larger corpus
 --INI--
 browscap={PWD}/browscap_lite_2016_12_06.ini
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

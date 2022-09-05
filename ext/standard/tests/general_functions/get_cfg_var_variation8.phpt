@@ -6,6 +6,7 @@ Francesco Fullone ff@ideato.it
 --INI--
 magic_quotes_gpc=1
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php if (getenv('SKIP_ASAN')) die('xfail Startup failure leak'); ?>
 --FILE--
 <?php

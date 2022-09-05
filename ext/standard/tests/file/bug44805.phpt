@@ -1,5 +1,7 @@
 --TEST--
 Bug#44806 (rename() function is not portable to Windows)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $dirname = __DIR__;

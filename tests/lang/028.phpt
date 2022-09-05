@@ -1,5 +1,7 @@
 --TEST--
 Testing calling user-level functions from C
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

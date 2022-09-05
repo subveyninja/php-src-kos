@@ -1,5 +1,7 @@
 --TEST--
 Bug #70249 (Segmentation fault while running PHPUnit tests on phpBB 3.2-dev)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

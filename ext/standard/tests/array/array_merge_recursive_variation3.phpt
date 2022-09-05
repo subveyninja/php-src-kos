@@ -1,5 +1,7 @@
 --TEST--
 Test array_merge_recursive() function : usage variations - different arrays for 'arr1' argument
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /*

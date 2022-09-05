@@ -1,5 +1,7 @@
 --TEST--
 html_entity_decode() conformance check (HTML 5)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $map = array(

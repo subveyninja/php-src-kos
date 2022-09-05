@@ -1,6 +1,7 @@
 --TEST--
 Zend signed multiply 64-bit, variation 2
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php if ((1 << 31) < 0) print "skip Running on 32-bit target"; ?>
 --FILE--
 <?php

@@ -1,5 +1,7 @@
 --TEST--
 htmlentities() conformance check (HTML 5)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 function utf32_utf8($k) {

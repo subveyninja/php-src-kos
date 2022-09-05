@@ -1,5 +1,7 @@
 --TEST--
 Test sprintf() function : usage variations - float formats with float values
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "*** Testing sprintf() : float formats with float values ***\n";

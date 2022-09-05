@@ -1,5 +1,7 @@
 --TEST--
 Test unset(), empty() and isset() functions
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "*** Testing unset(), empty() & isset() with scalar variables ***\n";

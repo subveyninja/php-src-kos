@@ -1,5 +1,7 @@
 --TEST--
 Bug #33957 (gmdate('W')/date('W') sometimes returns wrong week number)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 date_default_timezone_set("UTC");

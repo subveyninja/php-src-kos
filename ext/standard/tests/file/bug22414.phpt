@@ -1,5 +1,7 @@
 --TEST--
 Bug #22414 (passthru() does not read data correctly)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 --INI--
 output_handler=
 --FILE--

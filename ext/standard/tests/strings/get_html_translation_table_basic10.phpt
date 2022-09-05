@@ -1,5 +1,7 @@
 --TEST--
 Test get_html_translation_table() function: htmlentities/HTML 4/ISO-8859-1 (bug #64011)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

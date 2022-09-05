@@ -1,6 +1,7 @@
 --TEST--
 Timeout again inside register_shutdown_function
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (getenv("SKIP_SLOW_TESTS")) die("skip slow test");
 if (PHP_ZTS) die("skip hard_timeout works only on no-zts builds");

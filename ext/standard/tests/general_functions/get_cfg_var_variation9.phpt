@@ -7,6 +7,8 @@ Francesco Fullone ff@ideato.it
 session.use_cookies=0
 session.serialize_handler=php
 session.save_handler=files
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

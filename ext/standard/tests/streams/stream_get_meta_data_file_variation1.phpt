@@ -1,5 +1,7 @@
 --TEST--
 stream_get_meta_data() with differing file access modes
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

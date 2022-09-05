@@ -1,6 +1,7 @@
 --TEST--
 Bug #66783 (UAF when appending DOMDocument to element)
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (!extension_loaded('dom')) die('skip dom extension not available');
 ?>

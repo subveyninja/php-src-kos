@@ -1,5 +1,7 @@
 --TEST--
 Bug #26615 (exec crash on long input lines)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 --INI--
 variables_order=E
 --FILE--

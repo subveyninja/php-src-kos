@@ -1,6 +1,7 @@
 --TEST--
 Bug #67081 DOMDocumentType->internalSubset returns entire DOCTYPE tag, not only the subset
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 require_once('skipif.inc');
 ?>

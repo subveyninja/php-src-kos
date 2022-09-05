@@ -1,6 +1,7 @@
 --TEST--
 Test that there is no arginfo/zpp mismatch
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (getenv('SKIP_MSAN')) die("skip msan misses interceptors for some functions");
 ?>

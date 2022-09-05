@@ -1,6 +1,7 @@
 --TEST--
 proc_open with PTY closes incorrect file descriptor
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 <?php
 
 $code = <<< 'EOC'

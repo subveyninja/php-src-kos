@@ -1,6 +1,7 @@
 --TEST--
 Bug #73594 (dns_get_record() does not populate $additional out parameter - $authns parameter)
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.EXEC test requiring exec function"); ?>
 <?php
 if (getenv("SKIP_ONLINE_TESTS")) die("skip test requiring internet connection");
 

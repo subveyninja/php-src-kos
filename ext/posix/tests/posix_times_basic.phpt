@@ -1,6 +1,7 @@
 --TEST--
 Test posix_times() function : basic functionality
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS times() not implemented"); ?>
 <?php
     if (!extension_loaded('posix')) die('skip - POSIX extension not loaded');
 ?>

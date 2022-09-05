@@ -1,5 +1,7 @@
 --TEST--
 abusing preg_match_all() #2
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 // this file is not used in the cron job

@@ -1,5 +1,7 @@
 --TEST--
 Test strncasecmp() function : usage variations - binary safe - all ASCII chars
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /* Test strncasecmp() function with binary values passed to 'str1' & 'str2' */

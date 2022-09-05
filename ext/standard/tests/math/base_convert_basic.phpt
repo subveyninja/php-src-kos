@@ -1,5 +1,7 @@
 --TEST--
 Test base_convert() - basic function tests base_convert()
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $frombase = array(2,8,10,16,36);

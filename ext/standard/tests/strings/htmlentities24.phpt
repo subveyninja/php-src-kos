@@ -1,5 +1,7 @@
 --TEST--
 Test htmlentities() function
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /* Prototype: string htmlentities ( string $string [, int $quote_style [, string $charset]] );

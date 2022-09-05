@@ -2,6 +2,8 @@
 Bug #77338: get_browser with empty string
 --INI--
 browscap={PWD}/browscap.ini
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

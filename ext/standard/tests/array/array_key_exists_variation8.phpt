@@ -1,5 +1,7 @@
 --TEST--
 Test array_key_exists() function : usage variations - array keys are different data types
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /*

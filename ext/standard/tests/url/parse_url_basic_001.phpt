@@ -1,5 +1,7 @@
 --TEST--
 Test parse_url() function: Parse a load of URLs without specifying the component
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /*

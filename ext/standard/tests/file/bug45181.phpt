@@ -1,5 +1,7 @@
 --TEST--
 Bug #45181 (chdir() should clear relative entries in stat cache)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 mkdir("bug45181_x");

@@ -5,6 +5,7 @@ allow_url_fopen=1
 --CONFLICTS--
 server
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.PROC_OPEN test requiring proc_open function"); ?>
 <?php
 include __DIR__."/../../sapi/cli/tests/skipif.inc";
 ?>

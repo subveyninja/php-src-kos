@@ -1,5 +1,7 @@
 --TEST--
 proc_open() regression test 1 (proc_open() leak)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.PROC_OPEN test requiring proc_open function"); ?>
 --FILE--
 <?php
 $pipes = array(1, 2, 3);

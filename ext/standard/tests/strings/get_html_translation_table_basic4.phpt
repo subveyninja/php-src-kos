@@ -1,5 +1,7 @@
 --TEST--
 Test get_html_translation_table() function : basic functionality - charset WINDOWS-1252
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "*** Testing get_html_translation_table() : basic functionality/Windows-1252 ***\n";

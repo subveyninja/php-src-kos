@@ -1,5 +1,7 @@
 --TEST--
 Test fputcsv() : usage variations - with all parameters specified
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

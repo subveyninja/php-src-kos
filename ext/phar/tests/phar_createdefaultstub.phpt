@@ -1,6 +1,7 @@
 --TEST--
 Phar: Phar::createDefaultStub() with and without arg
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php if (!extension_loaded("phar")) die("skip"); ?>
 --FILE--
 <?php

@@ -1,5 +1,7 @@
 --TEST--
 test of larger than 8kb text file being parsed by require statement
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
  file_put_contents('test.php',str_repeat('passed, ',1024));

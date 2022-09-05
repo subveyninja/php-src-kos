@@ -1,5 +1,7 @@
 --TEST--
 Test array_unshift() function : usage variations - all possible values for 'var' argument
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /*

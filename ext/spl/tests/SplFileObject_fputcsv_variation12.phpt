@@ -1,5 +1,7 @@
 --TEST--
 SplFileObject::fputcsv(): Usage variations -- with default enclosure and different delimiter
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

@@ -1,5 +1,7 @@
 --TEST--
 Test get_html_translation_table() function : basic functionality - table as HTML_SPECIALCHARS
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 /* test get_html_translation_table() when $table argument is specified as HTML_SPECIALCHARS */

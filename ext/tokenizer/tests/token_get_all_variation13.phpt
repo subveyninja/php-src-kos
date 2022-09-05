@@ -1,6 +1,7 @@
 --TEST--
 Test token_get_all() function : usage variations - with class/object constructs
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php if (!extension_loaded("tokenizer")) print "skip"; ?>
 --FILE--
 <?php

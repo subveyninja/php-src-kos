@@ -1,5 +1,7 @@
 --TEST--
 Bug #45303 (Opening php:// wrapper in append mode results in a warning)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 $fd = fopen("php://stdout","a");

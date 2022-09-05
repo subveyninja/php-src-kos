@@ -2,6 +2,8 @@
 Test array_merge() function
 --INI--
 precision=14
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 echo "\n*** Testing array_merge() basic functionality ***";

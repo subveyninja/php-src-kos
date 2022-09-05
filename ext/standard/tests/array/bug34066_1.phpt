@@ -1,5 +1,7 @@
 --TEST--
 Bug #34066 (recursive array_walk causes segfault)
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

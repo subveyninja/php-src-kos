@@ -1,6 +1,7 @@
 --TEST--
 proc_open
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
 if (!is_executable('/bin/sleep')) echo 'skip no sleep';
 if (getenv('SKIP_SLOW_TESTS')) echo 'skip slow test';

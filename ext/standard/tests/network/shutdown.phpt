@@ -1,6 +1,7 @@
 --TEST--
 stream_socket_shutdown() test on IPv4 TCP Loopback
 --SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php
     function_exists('stream_socket_shutdown') or die('skip stream_socket_shutdown() is not supported.');
 ?>

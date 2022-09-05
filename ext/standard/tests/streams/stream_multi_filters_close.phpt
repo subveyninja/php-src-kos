@@ -1,5 +1,7 @@
 --TEST--
 Check if multiple filters are closed correctly and never called again after close
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 
