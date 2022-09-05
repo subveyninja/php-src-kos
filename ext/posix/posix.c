@@ -216,6 +216,9 @@ PHP_FUNCTION(posix_getpid)
 /* {{{ Get the parent process id (POSIX.1, 4.1.1) */
 PHP_FUNCTION(posix_getppid)
 {
+#ifdef __KOS__
+    RETURN_LONG(0);
+#endif
 	PHP_POSIX_RETURN_LONG_FUNC(getppid);
 }
 /* }}} */
@@ -335,6 +338,9 @@ PHP_FUNCTION(posix_getlogin)
 /* {{{ Get current process group id (POSIX.1, 4.3.1) */
 PHP_FUNCTION(posix_getpgrp)
 {
+#ifdef __KOS__
+    RETURN_LONG(0);
+#endif
 	PHP_POSIX_RETURN_LONG_FUNC(getpgrp);
 }
 /* }}} */
@@ -377,11 +383,21 @@ PHP_FUNCTION(posix_getpgid)
 		Z_PARAM_LONG(val)
 	ZEND_PARSE_PARAMETERS_END();
 
+#ifdef __KOS__
+    if (0 > val) {
+        RETURN_FALSE;
+    }
+    if ((val = getpgid(val)) < 0) {
+        RETURN_LONG(0);
+    }
+    RETURN_LONG(val);
+#else
 	if ((val = getpgid(val)) < 0) {
 		POSIX_G(last_error) = errno;
 		RETURN_FALSE;
 	}
 	RETURN_LONG(val);
+#endif
 }
 #endif
 /* }}} */
@@ -396,7 +412,14 @@ PHP_FUNCTION(posix_getsid)
 		Z_PARAM_LONG(val)
 	ZEND_PARSE_PARAMETERS_END();
 
-	if ((val = getsid(val)) < 0) {
+#ifdef __KOS__
+    if (0 > val) {
+        RETURN_FALSE;
+    }
+    RETURN_LONG(val);
+#endif
+
+    if ((val = getsid(val)) < 0) {
 		POSIX_G(last_error) = errno;
 		RETURN_FALSE;
 	}
@@ -420,8 +443,13 @@ PHP_FUNCTION(posix_uname)
 	array_init(return_value);
 
 	add_assoc_string(return_value, "sysname",  u.sysname);
-	add_assoc_string(return_value, "nodename", u.nodename);
-	add_assoc_string(return_value, "release",  u.release);
+#ifdef __KOS__
+    static const char *kos_nodename = "kos_nodename";
+    add_assoc_string(return_value, "nodename", kos_nodename);
+#else
+    add_assoc_string(return_value, "nodename", u.nodename);
+#endif
+    add_assoc_string(return_value, "release",  u.release);
 	add_assoc_string(return_value, "version",  u.version);
 	add_assoc_string(return_value, "machine",  u.machine);
 
@@ -466,7 +494,7 @@ PHP_FUNCTION(posix_times)
 #ifdef HAVE_CTERMID
 PHP_FUNCTION(posix_ctermid)
 {
-	char  buffer[L_ctermid];
+	char  buffer[L_ctermid] = {0};
 
 	ZEND_PARSE_PARAMETERS_NONE();
 
@@ -477,6 +505,13 @@ PHP_FUNCTION(posix_ctermid)
 		POSIX_G(last_error) = errno;
 		RETURN_FALSE;
 	}
+
+#ifdef __KOS__
+    if (0 == buffer[0]) {
+        static const char *kos_term_name = "kos_terminal";
+        RETURN_STRING(kos_term_name);
+    }
+#endif
 
 	RETURN_STRING(buffer);
 }
@@ -704,14 +739,23 @@ int php_posix_group_to_array(struct group *g, zval *array_group) /* {{{ */
 	array_init(&array_members);
 
 	add_assoc_string(array_group, "name", g->gr_name);
-	if (g->gr_passwd) {
+#ifdef __KOS__
+    add_assoc_string(array_group, "passwd", g->gr_name);
+#else
+    if (g->gr_passwd) {
 		add_assoc_string(array_group, "passwd", g->gr_passwd);
 	} else {
 		add_assoc_null(array_group, "passwd");
 	}
+#endif
 	for (count = 0;; count++) {
 		/* gr_mem entries may be misaligned on macos. */
 		char *gr_mem;
+#ifdef __KOS__
+        if (!g->gr_mem) {
+            break;
+        }
+#endif
 		memcpy(&gr_mem, &g->gr_mem[count], sizeof(char *));
 		if (!gr_mem) {
 			break;
@@ -870,6 +914,11 @@ try_again:
 	}
 	g = &_g;
 #else
+#ifdef __KOS__
+    if (0 > gid) {
+        RETURN_FALSE;
+    }
+#endif
 	if (NULL == (g = getgrgid(gid))) {
 		POSIX_G(last_error) = errno;
 		RETURN_FALSE;
@@ -896,12 +945,26 @@ int php_posix_passwd_to_array(struct passwd *pw, zval *return_value) /* {{{ */
 		return 0;
 
 	add_assoc_string(return_value, "name",      pw->pw_name);
-	add_assoc_string(return_value, "passwd",    pw->pw_passwd);
+#ifdef __KOS__
+    static const char *kos_passwd = "kos_passwd";
+    add_assoc_string(return_value, "passwd",    kos_passwd);
+#else
+    add_assoc_string(return_value, "passwd",    pw->pw_passwd);
+#endif
 	add_assoc_long  (return_value, "uid",       pw->pw_uid);
 	add_assoc_long  (return_value, "gid",		pw->pw_gid);
-	add_assoc_string(return_value, "gecos",     pw->pw_gecos);
+#ifdef __KOS__
+    add_assoc_null(return_value, "gecos");
+#else
+    add_assoc_string(return_value, "gecos",     pw->pw_gecos);
+#endif
 	add_assoc_string(return_value, "dir",       pw->pw_dir);
+#ifdef __KOS__
+    static const char *kos_shell = "kos_shell";
+    add_assoc_string(return_value, "shell",     kos_shell);
+#else
 	add_assoc_string(return_value, "shell",     pw->pw_shell);
+#endif
 	return 1;
 }
 /* }}} */
@@ -998,12 +1061,16 @@ try_again:
 	}
 	pw = &_pw;
 #else
+    if (0 > uid) {
+        RETURN_FALSE;
+    }
+
 	if (NULL == (pw = getpwuid(uid))) {
 		POSIX_G(last_error) = errno;
 		RETURN_FALSE;
 	}
 #endif
-	array_init(return_value);
+    array_init(return_value);
 
 	if (!php_posix_passwd_to_array(pw, return_value)) {
 		zend_array_destroy(Z_ARR_P(return_value));

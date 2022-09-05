@@ -46,7 +46,8 @@
 #elif defined(__sun__)
 # define PHP_OS_FAMILY			"Solaris"
 #elif defined(__linux__)
-# define PHP_OS_FAMILY			"Linux"
+#elif defined(__KOS__)
+# define PHP_OS_FAMILY			"KOS"
 #else
 # define PHP_OS_FAMILY			"Unknown"
 #endif
@@ -115,6 +116,11 @@ typedef int pid_t;
 # ifndef getcwd
 #  define getcwd(a, b)	_getcwd(a, b)
 # endif
+#endif
+
+/* KOS specific defines */
+#ifdef __KOS__
+#include <strings.h>
 #endif
 
 #if PHP_DEBUG

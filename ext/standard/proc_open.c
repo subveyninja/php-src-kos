@@ -395,10 +395,12 @@ PHP_FUNCTION(proc_get_status)
 			signaled = 1;
 			termsig = WTERMSIG(wstatus);
 		}
+#ifndef __KOS__
 		if (WIFSTOPPED(wstatus)) {
 			stopped = 1;
 			stopsig = WSTOPSIG(wstatus);
 		}
+#endif
 	} else if (wait_pid == -1) {
 		/* The only error which could occur here is ECHILD, which means that the PID we were
 		 * looking for either does not exist or is not a child of this process */
@@ -816,7 +818,7 @@ static int dup_proc_descriptor(php_file_descriptor_t from, php_file_descriptor_t
 		return FAILURE;
 	}
 #else
-	*to = dup(from);
+	// *to = dup(from);
 	if (*to < 0) {
 		php_error_docref(NULL, E_WARNING, "Failed to dup() for descriptor " ZEND_LONG_FMT ": %s",
 			nindex, strerror(errno));
@@ -1249,11 +1251,16 @@ PHP_FUNCTION(proc_open)
 	/* Clean up all the child ends and then open streams on the parent
 	 *   ends, where appropriate */
 	for (i = 0; i < ndesc; i++) {
+        // @todo: check it for KOS_TESTING
+        descriptors[i].type = DESCRIPTOR_TYPE_SOCKET;
+
 		php_stream *stream = NULL;
 
 		close_descriptor(descriptors[i].childend);
 
 		if (descriptors[i].type == DESCRIPTOR_TYPE_PIPE) {
+            descriptors[i].type = DESCRIPTOR_TYPE_SOCKET;
+
 			char *mode_string = NULL;
 
 			switch (descriptors[i].mode_flags) {

@@ -1544,7 +1544,11 @@ int main(int argc, char *argv[])
 								does that for us!  thies@thieso.net
 								20000419 */
 
+#ifdef __KOS__
+	if (0 > fpm_signals_init_mask()) {
+#else
 	if (0 > fpm_signals_init_mask() || 0 > fpm_signals_block()) {
+#endif
 		zlog(ZLOG_WARNING, "Could die in the case of too early reload signal");
 	}
 	zlog(ZLOG_DEBUG, "Blocked some signals");
@@ -1797,6 +1801,11 @@ consult the installation file that came with this distribution, or visit \n\
 #if ZEND_RC_DEBUG
 	old_rc_debug = zend_rc_debug;
 	zend_rc_debug = 0;
+#endif
+
+#ifdef __KOS__
+    fpm_config = "/usr/local/var/conf/fpm/php-fpm.conf";
+    force_daemon = 0;
 #endif
 
 	ret = fpm_init(argc, argv, fpm_config ? fpm_config : CGIG(fpm_config), fpm_prefix, fpm_pid, test_conf, php_allow_to_run_as_root, force_daemon, force_stderr);

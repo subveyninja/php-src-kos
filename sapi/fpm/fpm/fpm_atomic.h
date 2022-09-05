@@ -133,7 +133,14 @@ static inline atomic_uint_t atomic_cmp_set(atomic_t *lock, atomic_uint_t old, at
 
 #else
 
+#ifdef __KOS__
+typedef int32_t                     atomic_int_t;
+typedef uint32_t                    atomic_uint_t;
+typedef volatile atomic_uint_t      atomic_t;
+#define atomic_cmp_set(a,b,c) __sync_bool_compare_and_swap(a,b,c)
+#else
 #error Unsupported processor. Please open a bug report (bugs.php.net).
+#endif
 
 #endif
 

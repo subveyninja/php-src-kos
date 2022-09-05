@@ -24,6 +24,7 @@ static int fd_stderr[2];
 
 int fpm_stdio_init_main() /* {{{ */
 {
+#ifndef __KOS__
 	int fd = open("/dev/null", O_RDWR);
 
 	if (0 > fd) {
@@ -37,6 +38,7 @@ int fpm_stdio_init_main() /* {{{ */
 		return -1;
 	}
 	close(fd);
+#endif
 	return 0;
 }
 /* }}} */
