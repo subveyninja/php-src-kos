@@ -287,32 +287,44 @@ PHP_FUNCTION(posix_setegid)
 #ifdef HAVE_GETGROUPS
 PHP_FUNCTION(posix_getgroups)
 {
-	gid_t *gidlist;
+	gid_t  gidlist[NGROUPS_MAX];
 	int    result;
 	int    i;
 
 	ZEND_PARSE_PARAMETERS_NONE();
 
-	/* MacOS may return more than NGROUPS_MAX groups.
-	 * Fetch the actual number of groups and create an appropriate allocation. */
-	if ((result = getgroups(0, NULL)) < 0) {
-		POSIX_G(last_error) = errno;
-		RETURN_FALSE;
-	}
+#ifdef __KOS__
+    gid_t *group;
+    int    nogroups = 0;
+    long   ngroups_max;
 
-	gidlist = emalloc(sizeof(gid_t) * result);
-	if ((result = getgroups(result, gidlist)) < 0) {
-		POSIX_G(last_error) = errno;
-		efree(gidlist);
-		RETURN_FALSE;
-	}
+    ngroups_max = sysconf(_SC_NGROUPS_MAX) + 1;
+    if (0 < ngroups_max) {
+        group = (gid_t *)malloc(ngroups_max * sizeof(gid_t));
+        nogroups = getgroups((int)ngroups_max, group);
+    }
+
+    array_init(return_value);
+
+    for (i = 0; i < nogroups; i++) {
+        add_next_index_long(return_value, gidlist[i]);
+    }
+
+    if (0 < ngroups_max) {
+        free(group);
+    }
+#else
+    if ((result = getgroups(NGROUPS_MAX, gidlist)) < 0) {
+        POSIX_G(last_error) = errno;
+        RETURN_FALSE;
+    }
 
 	array_init(return_value);
 
 	for (i=0; i<result; i++) {
 		add_next_index_long(return_value, gidlist[i]);
 	}
-	efree(gidlist);
+#endif
 }
 #endif
 /* }}} */

@@ -34,6 +34,12 @@
 
 #if HAVE_FCNTL_H
 #include <fcntl.h>
+#include <kos.h>
+
+#endif
+
+#ifdef __KOS__
+# include <kos.h>
 #endif
 
 /* This symbol is defined in ext/standard/config.m4.
@@ -122,6 +128,11 @@ fail:
 #endif
 
 #include "proc_open.h"
+
+#ifdef KOS_TESTING
+static int g_last_proc_exit_status;
+static int g_last_cli_socket;
+#endif
 
 static int le_proc_open; /* Resource number for `proc` resources */
 
@@ -383,7 +394,16 @@ PHP_FUNCTION(proc_get_status)
 	exitcode = running ? -1 : wstatus;
 
 #elif HAVE_SYS_WAIT_H
-	wait_pid = waitpid(proc->child, &wstatus, WNOHANG|WUNTRACED);
+    // @todo: TMP
+    // wait_pid = waitpid(proc->child, &wstatus, WNOHANG|WUNTRACED);
+    // fprintf(stderr, "Our status: %d, wait_pid status: %d\n", g_last_proc_exit_status, wait_pid);
+    wstatus = g_last_proc_exit_status;
+
+    // @todo: rework
+    close(g_last_cli_socket);
+    for (int i = 10; i < 20; ++i) {
+        close(i);
+    }
 
 	if (wait_pid == proc->child) {
 		if (WIFEXITED(wstatus)) {
@@ -818,7 +838,8 @@ static int dup_proc_descriptor(php_file_descriptor_t from, php_file_descriptor_t
 		return FAILURE;
 	}
 #else
-	// *to = dup(from);
+	// disable creation new descriptor
+    // *to = dup(from);
 	if (*to < 0) {
 		php_error_docref(NULL, E_WARNING, "Failed to dup() for descriptor " ZEND_LONG_FMT ": %s",
 			nindex, strerror(errno));
@@ -1186,6 +1207,46 @@ PHP_FUNCTION(proc_open)
 	child       = pi.dwProcessId;
 	CloseHandle(pi.hThread);
 #elif HAVE_FORK
+
+    // Let's find real command, not `unset` or something else
+    char *real_command = NULL;
+    char *skip_unset = strstr(command, "Cli_that_not_exist");
+    if (skip_unset) {
+        real_command = strdup(skip_unset);
+    }
+
+    if (NULL == real_command) {
+        fprintf(stderr, "FATAL ERROR! Real command not found\n");
+        goto exit_fail;
+    }
+
+#ifdef KOS_TESTING
+    int cli_sock = create_local_client_socket_and_connect(KOS_TESTING_PORT);
+    if (0 > cli_sock) {
+        fprintf(stderr, "%s(): Failed to creat client's socket: %s\n", __func__, strerror(errno));
+        goto next_step;
+    } else {
+        size_t send_res = send(cli_sock, real_command, strlen(real_command), 0);
+        if (0 > send_res) {
+            fprintf(stderr, "%s(): Failed to send data: %s\n", __func__, strerror(errno));
+            goto next_step;
+        }
+        char buf_status_code[3] = {0};
+        int recv_res = recv(cli_sock, buf_status_code, sizeof(buf_status_code), 0);
+        if (0 > recv_res) {
+            fprintf(stderr, "%s(): Failed to recv data: %s\n", __func__, strerror(errno));
+            goto next_step;
+        }
+        g_last_proc_exit_status = atoi(buf_status_code);
+        g_last_cli_socket = cli_sock;
+    }
+#endif
+
+next_step:
+
+    free(real_command);
+
+#if 0
 	/* the Unix way */
 	child = fork();
 
@@ -1227,6 +1288,8 @@ PHP_FUNCTION(proc_open)
 		php_error_docref(NULL, E_WARNING, "Fork failed: %s", strerror(errno));
 		goto exit_fail;
 	}
+#endif
+
 #else
 # error You lose (configure should not have let you get here)
 #endif
@@ -1288,10 +1351,30 @@ PHP_FUNCTION(proc_open)
 						descriptors[i].mode_flags), mode_string, NULL);
 			php_stream_set_option(stream, PHP_STREAM_OPTION_PIPE_BLOCKING, blocking_pipes, NULL);
 #else
-			stream = php_stream_fopen_from_fd(descriptors[i].parentend, mode_string, NULL);
+
+#ifdef KOS_TESTING
+            if (i == STDOUT_FILENO) {
+                stream = php_stream_fopen_from_fd(cli_sock, mode_string, NULL);
+            } else {
+                stream = php_stream_fopen_from_fd(descriptors[i].parentend, mode_string, NULL);
+            }
+#else
+            stream = php_stream_fopen_from_fd(descriptors[i].parentend, mode_string, NULL);
+#endif
+
 #endif
 		} else if (descriptors[i].type == DESCRIPTOR_TYPE_SOCKET) {
+
+#ifdef KOS_TESTING
+            if (i == STDOUT_FILENO) {
+                stream = php_stream_sock_open_from_socket((php_socket_t) cli_sock, NULL);
+            } else {
+                stream = php_stream_sock_open_from_socket((php_socket_t) descriptors[i].parentend, NULL);
+            }
+#else
 			stream = php_stream_sock_open_from_socket((php_socket_t) descriptors[i].parentend, NULL);
+#endif
+
 		} else {
 			proc->pipes[i] = NULL;
 		}

@@ -639,8 +639,10 @@
 /* #undef HAVE_FOPENCOOKIE */
 
 /* Define to 1 if you have the `fork' function. */
-#ifndef __KOS__
+#if defined(KOS_TESTING) || !defined(__KOS__)
 #define HAVE_FORK 1
+#else
+/* #undef HAVE_FORK */
 #endif
 
 /* POSIX Access Control List */
@@ -681,6 +683,8 @@
 /* Define to 1 if you have the `funopen' function. */
 #ifdef __KOS__
 #define HAVE_FUNOPEN 1
+#else
+/* #undef HAVE_FUNOPEN */
 #endif
 
 /* Define to 1 if you have the `gai_strerror' function. */
@@ -1413,6 +1417,8 @@
 /* Define if sockaddr_un in sys/un.h contains a sun_len component */
 #ifdef __KOS__
 #define HAVE_SOCKADDR_UN_SUN_LEN 1
+#else
+/* #undef HAVE_SOCKADDR_UN_SUN_LEN */
 #endif
 
 /* */
@@ -1502,11 +1508,15 @@
 /* Define to 1 if you have the `strlcat' function. */
 #ifdef __KOS__
 #define HAVE_STRLCAT 1
+#else
+/* #undef HAVE_STRLCAT */
 #endif
 
 /* Define to 1 if you have the `strlcpy' function. */
 #ifdef __KOS__
 #define HAVE_STRLCPY 1
+#else
+/* #undef HAVE_STRLCPY */
 #endif
 
 /* Define to 1 if you have the `strndup' function. */
@@ -1685,7 +1695,9 @@
 #define HAVE_TIMELIB_CONFIG_H 1
 
 /* do we have times? */
-#ifndef __KOS__
+#ifdef __KOS__
+/* #undef HAVE_TIMES */
+#else
 #define HAVE_TIMES 1
 #endif
 
@@ -1893,8 +1905,10 @@
 #define PHP_BUILD_SYSTEM "Linux desktop 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux"
 
 /* Define if your system has fork/vfork/CreateProcess */
-#ifndef __KOS__
+#if defined(KOS_TESTING) || !defined(__KOS__)
 #define PHP_CAN_SUPPORT_PROC_OPEN 1
+#else
+/* #undef PHP_CAN_SUPPORT_PROC_OPEN */
 #endif
 
 /* fpm group name */
