@@ -1,0 +1,5 @@
+/build/
+/cmake-build-*/
+/resources/hdd/ext/
+/resources/hdd/tests/
+/resources/hdd/Zend/
