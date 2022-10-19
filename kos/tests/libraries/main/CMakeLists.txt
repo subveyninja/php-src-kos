@@ -1,4 +1,4 @@
-set(TARGET_NAME main)
+set(TARGET_NAME main_t)
 
 set(TARGET_SRC
         ${PHP_SRC_ROOT}/main/main.c

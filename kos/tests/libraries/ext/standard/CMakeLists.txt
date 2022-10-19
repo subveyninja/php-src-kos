@@ -1,4 +1,4 @@
-set(TARGET_NAME ext_standard)
+set(TARGET_NAME ext_standard_t)
 
 set(TARGET_SRC1
         ${PHP_SRC_ROOT}/ext/standard/crypt_freesec.c
