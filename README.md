@@ -26,7 +26,7 @@ To do this, after the build you will need to run the script with root permission
 
 To remove all files related to PHP from Kaspersky OS SDK, just run the script with root permissions:
 
-    ./kos/php/uinstall.sh
+    ./kos/php/uninstall.sh
 
 ## Using in your own solutions on Kaspersky OS
 
