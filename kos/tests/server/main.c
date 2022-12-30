@@ -29,13 +29,13 @@ int main(int argc, char *argv[]) {
 
     int res_pipe = pipe(stdout_fd);
     if (0 != res_pipe) {
-        fprintf(stderr, "Cli server: Can't pipe stdout_fd\n");
+        fprintf(stderr, "Server: Can't pipe stdout_fd\n");
         return 1;
     }
 
     int res_dup2 = dup2(stdout_fd[1], STDOUT_FILENO);
     if (0 > res_dup2) {
-        fprintf(stderr, "Cli server: Can't dup2 stdout_fd\n");
+        fprintf(stderr, "Server: Can't dup2 stdout_fd\n");
         return 1;
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         if (0 > cur_sock) {
             --trying_to_receive;
             if (0 == trying_to_receive) {
-                fprintf(stderr, "Cli server can't get new request\n");
+                fprintf(stderr, "Server can't get new request\n");
                 break;
             }
             usleep(10000);
@@ -70,12 +70,12 @@ int main(int argc, char *argv[]) {
         char request[KOS_TESTING_BUF_SIZE] = {0};
         int res_recv = recv_while_eof(cur_sock, request, KOS_TESTING_BUF_SIZE);
         if (0 >= res_recv) {
-            fprintf(stderr, "Cli server: failed to recv data or empty data\n");
+            fprintf(stderr, "Server: failed to recv data or empty data\n");
             close(cur_sock);
             continue;
         }
 
-        // If `Cli` said done, let's show results
+        // If `Client` said done, let's show results
         if (strcmp(request, "End") == 0) {
             close(cur_sock);
             close(main_sock);
@@ -117,11 +117,11 @@ int main(int argc, char *argv[]) {
         char buf_stdout[KOS_TESTING_BUF_SIZE] = {0};
         int res_read_stdout = read_nonblocking_stdout(stdout_fd[0], buf_stdout, sizeof(buf_stdout));
         if (0 > res_read_stdout) {
-            fprintf(stderr, "Cli server: Can't read from pipe stdout_fd\n");
+            fprintf(stderr, "Server: Can't read from pipe stdout_fd\n");
             return 1;
         }
 
-        // Preparing response for `Cli`
+        // Preparing response for `Client`
         char response[KOS_TESTING_BUF_SIZE + 16] = {0};
 
 #ifdef __KOS__
@@ -146,31 +146,12 @@ int main(int argc, char *argv[]) {
         // Send...
         ssize_t res_send = send(cur_sock, response, strlen(response), 0);
         if (0 > res_send) {
-            fprintf(stderr, "Cli server: Can't send response\n");
+            fprintf(stderr, "Server: Can't send response\n");
         }
 
         close(cur_sock);
         free_kos_args(data);
     }
-
-    fprintf(stderr, "Cli server: working done\n");
-
-#ifdef __KOS__
-    fprintf(stderr, "Cli server: preparing results...\n");
-    sleep(3);
-
-    // Collect and show results
-    char buf_stdout[KOS_TESTING_BUF_SIZE] = {0};
-    int res_read_stdout = read_nonblocking_stdout(stdout_fd[0], buf_stdout, sizeof(buf_stdout));
-    if (0 > res_read_stdout) {
-        fprintf(stderr, "Cli server: Can't read from pipe stdout_fd for results\n");
-        return 1;
-    }
-
-    fprintf(stderr, "Cli server: Results:\n%s\n", buf_stdout);
-#else
-    fprintf(stderr, "Cli server: please see Cli output for results \n");
-#endif
 
     return 0;
 }

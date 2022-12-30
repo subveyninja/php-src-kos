@@ -1464,8 +1464,6 @@ out:
 	cleanup_ps_args(argv);
 
 #ifdef KOS_TESTING
-    fprintf(stderr, "%s: Testing done!\n", __func__);
-
     int cli_sock = create_local_client_socket_and_connect(KOS_TESTING_PORT);
     if (0 > cli_sock) {
         fprintf(stderr, "%s(): Failed to creat client's socket: %s\n", __func__, strerror(errno));
