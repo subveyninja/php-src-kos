@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project (exmaple_web_server)
+project (example_web_server)
 
 # Add functions for installing artefacts.
 include (platform/install)

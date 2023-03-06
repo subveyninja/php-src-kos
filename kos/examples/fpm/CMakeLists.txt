@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project (exmaple_fpm)
+project (example_fpm)
 
 # Add functions for installing artefacts.
 include (platform/install)
