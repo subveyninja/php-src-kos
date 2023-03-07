@@ -112,7 +112,11 @@ int fpm_stdio_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 
 int fpm_stdio_flush_child() /* {{{ */
 {
+#ifdef __KOS__
+    return 0;
+#else
 	return write(STDERR_FILENO, FPM_STDIO_CMD_FLUSH, sizeof(FPM_STDIO_CMD_FLUSH));
+#endif
 }
 /* }}} */
 
