@@ -1205,7 +1205,7 @@
 /* #undef HAVE_ORALDAP */
 
 /* */
-#define HAVE_PCRE_JIT_SUPPORT 1
+/* #undef HAVE_PCRE_JIT_SUPPORT */
 
 /* */
 /* #undef HAVE_PCRE_VALGRIND_SUPPORT */
