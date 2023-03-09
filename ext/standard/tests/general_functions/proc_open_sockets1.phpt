@@ -27,7 +27,7 @@ while ($pipes) {
     $w = null;
     $e = null;
 
-    if (!stream_select($r, $w, $e, null, 0)) {
+    if (!stream_select($r, $w, $e, null)) {
         throw new Error("Select failed");
     }
 
@@ -50,7 +50,7 @@ while ($pipes) {
 }
 
 ?>
---EXPECTF--
+--EXPECT--
 bool(true)
 bool(true)
 PIPE 1 << hello

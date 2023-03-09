@@ -26,7 +26,7 @@ if ($exit_code !== 0) {
         else
             return -1;
     }
-    $delta = 10;
+    $delta = 5;
     $pid = getmypid();
     $niceBefore = getNice($pid);
     proc_nice($delta);

@@ -1,10 +1,12 @@
 --TEST--
 MySQL PDO->__construct() - Generic + DSN
+--EXTENSIONS--
+pdo_mysql
 --SKIPIF--
 <?php
-require_once(__DIR__ . DIRECTORY_SEPARATOR . 'skipif.inc');
 require_once(__DIR__ . DIRECTORY_SEPARATOR . 'mysql_pdo_test.inc');
 MySQLPDOTest::skip();
+if (getenv('CIRRUS_CI')) die('xfail Broken on Cirrus');
 ?>
 --FILE--
 <?php

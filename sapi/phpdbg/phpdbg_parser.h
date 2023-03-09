@@ -34,8 +34,8 @@
 /* Undocumented macros, especially those whose name start with YY_,
    are private implementation details.  Do not rely on them.  */
 
-#ifndef YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
-# define YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
+#ifndef YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
+# define YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef PHPDBG_DEBUG
 # if defined YYDEBUG
@@ -52,7 +52,7 @@
 extern int phpdbg_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 7 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 7 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
 
 #include "phpdbg.h"
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -60,13 +60,14 @@ extern int phpdbg_debug;
 typedef void* yyscan_t;
 #endif
 
-#line 64 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.h"
+#line 64 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.h"
 
 /* Token type.  */
 #ifndef PHPDBG_TOKENTYPE
 # define PHPDBG_TOKENTYPE
   enum phpdbg_tokentype
   {
+    END = 0,
     T_EVAL = 258,
     T_RUN = 259,
     T_SHELL = 260,
@@ -101,4 +102,4 @@ typedef phpdbg_param_t PHPDBG_STYPE;
 
 int phpdbg_parse (void);
 
-#endif /* !YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED  */
+#endif /* !YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED  */

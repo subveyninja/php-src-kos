@@ -34,8 +34,8 @@
 /* Undocumented macros, especially those whose name start with YY_,
    are private implementation details.  Do not rely on them.  */
 
-#ifndef YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
-# define YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
+#ifndef YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
+# define YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef INI_DEBUG
 # if defined YYDEBUG
@@ -87,4 +87,4 @@ typedef zval INI_STYPE;
 
 int ini_parse (void);
 
-#endif /* !YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED  */
+#endif /* !YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED  */

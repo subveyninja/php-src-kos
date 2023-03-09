@@ -5,7 +5,7 @@
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
    | available through the world-wide-web at the following url:           |
-   | http://www.php.net/license/3_01.txt                                  |
+   | https://www.php.net/license/3_01.txt                                 |
    | If you did not receive a copy of the PHP license and are unable to   |
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
@@ -117,7 +117,7 @@ int dom_element_tag_name_read(dom_object *obj, zval *retval)
 	nodep = dom_object_get_node(obj);
 
 	if (nodep == NULL) {
-		php_dom_throw_error(INVALID_STATE_ERR, 0);
+		php_dom_throw_error(INVALID_STATE_ERR, 1);
 		return FAILURE;
 	}
 
@@ -150,10 +150,11 @@ int dom_element_schema_type_info_read(dom_object *obj, zval *retval)
 
 /* }}} */
 
+/* Note: the object returned is not necessarily a node, but can be an attribute or a namespace declaration. */
 static xmlNodePtr dom_get_dom1_attribute(xmlNodePtr elem, xmlChar *name) /* {{{ */
 {
-    int len;
-    const xmlChar *nqname;
+	int len;
+	const xmlChar *nqname;
 
 	nqname = xmlSplitQName3(name, &len);
 	if (nqname != NULL) {
@@ -376,25 +377,13 @@ PHP_METHOD(DOMElement, getAttributeNode)
 	}
 
 	if (attrp->type == XML_NAMESPACE_DECL) {
-		xmlNsPtr curns;
-		xmlNodePtr nsparent;
-
-		nsparent = attrp->_private;
-		curns = xmlNewNs(NULL, attrp->name, NULL);
-		if (attrp->children) {
-			curns->prefix = xmlStrdup((xmlChar *) attrp->children);
-		}
-		if (attrp->children) {
-			attrp = xmlNewDocNode(nodep->doc, NULL, (xmlChar *) attrp->children, attrp->name);
-		} else {
-			attrp = xmlNewDocNode(nodep->doc, NULL, (xmlChar *)"xmlns", attrp->name);
-		}
-		attrp->type = XML_NAMESPACE_DECL;
-		attrp->parent = nsparent;
-		attrp->ns = curns;
+		xmlNsPtr original = (xmlNsPtr) attrp;
+		/* Keep parent alive, because we're a fake child. */
+		GC_ADDREF(&intern->std);
+		(void) php_dom_create_fake_namespace_decl(nodep, original, return_value, intern);
+	} else {
+		DOM_RET_OBJ((xmlNodePtr) attrp, &ret, intern);
 	}
-
-	DOM_RET_OBJ((xmlNodePtr) attrp, &ret, intern);
 }
 /* }}} end dom_element_get_attribute_node */
 
@@ -570,9 +559,9 @@ PHP_METHOD(DOMElement, getAttributeNS)
 
 static xmlNsPtr _dom_new_reconNs(xmlDocPtr doc, xmlNodePtr tree, xmlNsPtr ns) /* {{{ */
 {
-    xmlNsPtr def;
-    xmlChar prefix[50];
-    int counter = 1;
+	xmlNsPtr def;
+	xmlChar prefix[50];
+	int counter = 1;
 
 	if ((tree == NULL) || (ns == NULL) || (ns->type != XML_NAMESPACE_DECL)) {
 		return NULL;
@@ -798,7 +787,7 @@ Since: DOM Level 2
 PHP_METHOD(DOMElement, getAttributeNodeNS)
 {
 	zval *id;
-	xmlNodePtr elemp, fakeAttrp;
+	xmlNodePtr elemp;
 	xmlAttrPtr attrp;
 	dom_object *intern;
 	size_t uri_len, name_len;
@@ -819,21 +808,9 @@ PHP_METHOD(DOMElement, getAttributeNodeNS)
 			xmlNsPtr nsptr;
 			nsptr = dom_get_nsdecl(elemp, (xmlChar *)name);
 			if (nsptr != NULL) {
-				xmlNsPtr curns;
-				curns = xmlNewNs(NULL, nsptr->href, NULL);
-				if (nsptr->prefix) {
-					curns->prefix = xmlStrdup((xmlChar *) nsptr->prefix);
-				}
-				if (nsptr->prefix) {
-					fakeAttrp = xmlNewDocNode(elemp->doc, NULL, (xmlChar *) nsptr->prefix, nsptr->href);
-				} else {
-					fakeAttrp = xmlNewDocNode(elemp->doc, NULL, (xmlChar *)"xmlns", nsptr->href);
-				}
-				fakeAttrp->type = XML_NAMESPACE_DECL;
-				fakeAttrp->parent = elemp;
-				fakeAttrp->ns = curns;
-
-				DOM_RET_OBJ(fakeAttrp, &ret, intern);
+				/* Keep parent alive, because we're a fake child. */
+				GC_ADDREF(&intern->std);
+				(void) php_dom_create_fake_namespace_decl(elemp, nsptr, return_value, intern);
 			} else {
 				RETURN_NULL();
 			}
@@ -883,12 +860,12 @@ PHP_METHOD(DOMElement, setAttributeNodeNS)
 		RETURN_FALSE;
 	}
 
-    nsp = attrp->ns;
-    if (nsp != NULL) {
-        existattrp = xmlHasNsProp(nodep, nsp->href, attrp->name);
-    } else {
-        existattrp = xmlHasProp(nodep, attrp->name);
-    }
+	nsp = attrp->ns;
+	if (nsp != NULL) {
+		existattrp = xmlHasNsProp(nodep, nsp->href, attrp->name);
+	} else {
+		existattrp = xmlHasProp(nodep, attrp->name);
+	}
 
 	if (existattrp != NULL && existattrp->type != XML_ATTRIBUTE_DECL) {
 		if ((oldobj = php_dom_object_get_data((xmlNodePtr) existattrp)) != NULL &&
@@ -1014,7 +991,7 @@ PHP_METHOD(DOMElement, hasAttributeNS)
 }
 /* }}} end dom_element_has_attribute_ns */
 
-static void php_set_attribute_id(xmlAttrPtr attrp, zend_bool is_id) /* {{{ */
+static void php_set_attribute_id(xmlAttrPtr attrp, bool is_id) /* {{{ */
 {
 	if (is_id == 1 && attrp->atype != XML_ATTRIBUTE_ID) {
 		xmlChar *id_val;
@@ -1042,7 +1019,7 @@ PHP_METHOD(DOMElement, setIdAttribute)
 	dom_object *intern;
 	char *name;
 	size_t name_len;
-	zend_bool is_id;
+	bool is_id;
 
 	id = ZEND_THIS;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sb", &name, &name_len, &is_id) == FAILURE) {
@@ -1078,7 +1055,7 @@ PHP_METHOD(DOMElement, setIdAttributeNS)
 	dom_object *intern;
 	size_t uri_len, name_len;
 	char *uri, *name;
-	zend_bool is_id;
+	bool is_id;
 
 	id = ZEND_THIS;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssb", &uri, &uri_len, &name, &name_len, &is_id) == FAILURE) {
@@ -1112,7 +1089,7 @@ PHP_METHOD(DOMElement, setIdAttributeNode)
 	xmlNode *nodep;
 	xmlAttrPtr attrp;
 	dom_object *intern, *attrobj;
-	zend_bool is_id;
+	bool is_id;
 
 	id = ZEND_THIS;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "Ob", &node, dom_attr_class_entry, &is_id) == FAILURE) {
@@ -1234,7 +1211,7 @@ PHP_METHOD(DOMElement, prepend)
 }
 /* }}} end DOMElement::prepend */
 
-/* {{{ URL: https://dom.spec.whatwg.org/#dom-parentnode-prepend
+/* {{{ URL: https://dom.spec.whatwg.org/#dom-parentnode-replacechildren
 Since: DOM Living Standard (DOM4)
 */
 PHP_METHOD(DOMElement, replaceWith)
@@ -1251,8 +1228,7 @@ PHP_METHOD(DOMElement, replaceWith)
 	id = ZEND_THIS;
 	DOM_GET_OBJ(context, id, xmlNodePtr, intern);
 
-	dom_parent_node_after(intern, args, argc);
-	dom_child_node_remove(intern);
+	dom_child_replace_with(intern, args, argc);
 }
 /* }}} end DOMElement::prepend */
 

@@ -4,16 +4,19 @@ add_subdirectory(main)
 add_subdirectory(Zend)
 
 set(PHP_EXT_MODULES
+    Zend
     main
     main_streams
-    Zend
+    ext_standard
+    ext_session
+    ext_openssl
+    ext_fileinfo
     ext_xmlwriter
     ext_xmlreader
     ext_xml
     ext_tokenizer
     ext_spl
     ext_simplexml
-    ext_session
     ext_reflection
     ext_posix
     ext_phar
@@ -23,17 +26,15 @@ set(PHP_EXT_MODULES
     ext_iconv
     ext_hash
     ext_filter
-    ext_fileinfo
     ext_dom
     ext_ctype
     ext_sqlite3
     ext_pcre
-    ext_openssl
     ext_libxml
-    ext_standard
+    ext_random
     ext_date
-    main_streams
     main
+    main_streams
     PARENT_SCOPE
 )
 

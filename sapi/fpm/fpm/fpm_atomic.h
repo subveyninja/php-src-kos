@@ -139,7 +139,7 @@ typedef uint32_t                    atomic_uint_t;
 typedef volatile atomic_uint_t      atomic_t;
 #define atomic_cmp_set(a,b,c) __sync_bool_compare_and_swap(a,b,c)
 #else
-#error Unsupported processor. Please open a bug report (bugs.php.net).
+#error Unsupported processor. Please open a bug report (https://github.com/php/php-src/issues).
 #endif
 
 #endif

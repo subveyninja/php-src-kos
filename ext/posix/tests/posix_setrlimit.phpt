@@ -1,10 +1,13 @@
 --TEST--
 posix_setrlimit(): Basic tests
+--EXTENSIONS--
+posix
 --SKIPIF--
 <?php if (PHP_OS_FAMILY == "KOS") die("skip KOS setrlimit() not implemented"); ?>
 <?php
-if (!extension_loaded('posix')) die('skip - POSIX extension not loaded');
 if (!function_exists('posix_setrlimit')) die('skip posix_setrlimit() not found');
+// On FreeBSD the second call does not report an error, though the limit isn't changed either.
+if (str_contains(PHP_OS, 'FreeBSD')) die('skip different behavior on FreeBSD');
 ?>
 --FILE--
 <?php

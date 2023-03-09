@@ -2,8 +2,6 @@
 php://input is empty when enable_post_data_reading=Off
 --INI--
 allow_url_fopen=1
---CONFLICTS--
-server
 --SKIPIF--
 <?php if (PHP_OS_FAMILY == "KOS") die("skip KOS.PROC_OPEN test requiring proc_open function"); ?>
 <?php

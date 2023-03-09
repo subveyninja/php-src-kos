@@ -1,5 +1,7 @@
 --TEST--
 Test session_status() function : active, none
+--EXTENSIONS--
+session
 --SKIPIF--
 <?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 <?php include('skipif.inc'); ?>

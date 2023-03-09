@@ -38,7 +38,6 @@ add_library(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${PHP_SRC_ROOT}/ext/pcre/pcre2lib
         ${PHP_SRC_ROOT}/ext/pcre/
 )
 

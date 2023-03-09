@@ -17,7 +17,6 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_log.c
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_main.c
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_php.c
-    ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_php_trace.c
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_process_ctl.c
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_request.c
     ${PHP_SRC_ROOT}/sapi/fpm/fpm/fpm_shm.c
@@ -71,7 +70,7 @@ endif ()
 
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${PHP_SRC_ROOT}/sapi/fpm
+        ${PHP_SRC_ROOT}/sapi/fpm/
 )
 
 target_compile_definitions(${TARGET_NAME}

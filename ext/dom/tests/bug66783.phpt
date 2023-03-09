@@ -1,10 +1,9 @@
 --TEST--
 Bug #66783 (UAF when appending DOMDocument to element)
+--EXTENSIONS--
+dom
 --SKIPIF--
 <?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
-<?php
-if (!extension_loaded('dom')) die('skip dom extension not available');
-?>
 --FILE--
 <?php
 $doc = new DomDocument;
@@ -16,5 +15,5 @@ try {
     echo $ex->getMessage(), PHP_EOL;
 }
 ?>
---EXPECTF--
+--EXPECT--
 Hierarchy Request Error

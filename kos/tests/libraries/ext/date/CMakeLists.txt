@@ -6,6 +6,7 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/date/lib/dow.c
     ${PHP_SRC_ROOT}/ext/date/lib/parse_date.c
     ${PHP_SRC_ROOT}/ext/date/lib/parse_tz.c
+    ${PHP_SRC_ROOT}/ext/date/lib/parse_posix.c
     ${PHP_SRC_ROOT}/ext/date/lib/timelib.c
     ${PHP_SRC_ROOT}/ext/date/lib/tm2unixtime.c
     ${PHP_SRC_ROOT}/ext/date/lib/unixtime2tm.c

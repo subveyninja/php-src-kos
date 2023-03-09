@@ -30,6 +30,11 @@ jobs:
       - name: Generate Matrix
         id: set-matrix
         run: php .github/nightly_matrix.php "${{ github.event_name }}" "${{ github.run_attempt }}"
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   LINUX_X64:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -73,11 +78,13 @@ jobs:
       - name: Test
         uses: ./.github/actions/test-linux
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }}
           runTestsParameters: >-
             ${{ matrix.run_tests_parameters }}
       - name: Test Tracing JIT
         uses: ./.github/actions/test-linux
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} Tracing JIT
           runTestsParameters: >-
             ${{ matrix.run_tests_parameters }}
             -d zend_extension=opcache.so
@@ -86,6 +93,7 @@ jobs:
       - name: Test OpCache
         uses: ./.github/actions/test-linux
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} OpCache
           runTestsParameters: >-
             ${{ matrix.run_tests_parameters }}
             -d zend_extension=opcache.so
@@ -96,6 +104,7 @@ jobs:
         if: matrix.test_function_jit
         uses: ./.github/actions/test-linux
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} Function JIT
           runTestsParameters: >-
             ${{ matrix.run_tests_parameters }}
             -d zend_extension=opcache.so
@@ -104,6 +113,11 @@ jobs:
             -d opcache.jit=1205
       - name: Verify generated files are up to date
         uses: ./.github/actions/verify-generated-files
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   LINUX_X32:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -175,6 +189,11 @@ jobs:
             -d opcache.enable_cli=1
             -d opcache.jit_buffer_size=16M
             -d opcache.jit=1205
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   MACOS:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -207,9 +226,12 @@ jobs:
         run: sudo make install
       - name: Test
         uses: ./.github/actions/test-macos
+        with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }}
       - name: Test Tracing JIT
         uses: ./.github/actions/test-macos
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} Tracing JIT
           runTestsParameters: >-
             -d zend_extension=opcache.so
             -d opcache.enable_cli=1
@@ -218,6 +240,7 @@ jobs:
       - name: Test OpCache
         uses: ./.github/actions/test-macos
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} OpCache
           runTestsParameters: >-
             -d zend_extension=opcache.so
             -d opcache.enable_cli=1
@@ -225,6 +248,7 @@ jobs:
       - name: Test Function JIT
         uses: ./.github/actions/test-macos
         with:
+          testArtifacts: ${{ matrix.branch.name }}_${{ matrix.debug && 'DEBUG' || 'RELEASE' }}_${{ matrix.zts && 'ZTS' || 'NTS' }} Function JIT
           runTestsParameters: >-
             -d zend_extension=opcache.so
             -d opcache.enable_cli=1
@@ -233,6 +257,11 @@ jobs:
             -d opcache.jit=1205
       - name: Verify generated files are up to date
         uses: ./.github/actions/verify-generated-files
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   COVERAGE_DEBUG_NTS:
     if: github.repository_owner == 'php' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-20.04
@@ -267,6 +296,11 @@ jobs:
       - name: Upload Test Coverage to Codecov.io
         if: always()
         run: bash <(curl -s https://codecov.io/bash)
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   COMMUNITY:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -382,6 +416,11 @@ jobs:
           if [ $EXIT_CODE -gt 128 ]; then
             exit 1
           fi
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   OPCACHE_VARIATION:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -453,6 +492,11 @@ jobs:
             -d opcache.file_cache_only=1
       - name: Verify generated files are up to date
         uses: ./.github/actions/verify-generated-files
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
   MSAN:
     needs: GENERATE_MATRIX
     if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
@@ -545,3 +589,68 @@ jobs:
             -d opcache.enable_cli=1
       - name: Verify generated files are up to date
         uses: ./.github/actions/verify-generated-files
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}
+  LIBMYSQLCLIENT:
+    needs: GENERATE_MATRIX
+    if: ${{ needs.GENERATE_MATRIX.outputs.branches != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.GENERATE_MATRIX.outputs.branches) }}
+        exclude:
+          - branch: { name: 'PHP-80', ref: 'PHP-8.0' }
+    name: "${{ matrix.branch.name }}_LIBMYSQLCLIENT"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ matrix.branch.ref }}
+      - name: apt
+        run: |
+          sudo apt-get update -y | true
+          sudo apt install bison re2c
+      - name: Setup
+        run: |
+          sudo service mysql start
+          mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS test"
+          # Ensure local_infile tests can run.
+          mysql -uroot -proot -e "SET GLOBAL local_infile = true"
+      # Does not support caching_sha2_auth :(
+      # - name: Build mysql-5.6
+      #  uses: ./.github/actions/build-libmysqlclient
+      #  with:
+      #    libmysql: mysql-5.6.49-linux-glibc2.12-x86_64.tar.gz
+      # - name: Test mysql-5.6
+      #   uses: ./.github/actions/test-libmysqlclient
+      - name: Build mysql-5.7
+        uses: ./.github/actions/build-libmysqlclient
+        with:
+          libmysql: mysql-5.7.41-linux-glibc2.12-x86_64.tar.gz
+          withMysqli: ${{ matrix.branch.ref == 'PHP-8.1' }}
+      - name: Test mysql-5.7
+        uses: ./.github/actions/test-libmysqlclient
+        with:
+          withMysqli: ${{ matrix.branch.ref == 'PHP-8.1' }}
+      - name: Build mysql-8.0
+        uses: ./.github/actions/build-libmysqlclient
+        with:
+          # FIXME: There are new warnings
+          # configurationParameters: --enable-werror
+          libmysql: mysql-8.0.33-linux-glibc2.12-x86_64.tar.xz
+          withMysqli: ${{ matrix.branch.ref == 'PHP-8.1' }}
+      - name: Test mysql-8.0
+        uses: ./.github/actions/test-libmysqlclient
+        with:
+          withMysqli: ${{ matrix.branch.ref == 'PHP-8.1' }}
+      - name: Verify generated files are up to date
+        uses: ./.github/actions/verify-generated-files
+      - name: Notify Slack
+        if: failure()
+        uses: ./.github/actions/notify-slack
+        with:
+          token: ${{ secrets.ACTION_MONITORING_SLACK }}

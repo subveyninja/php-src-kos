@@ -959,7 +959,7 @@ PHP_FUNCTION(kos_proc_open)
 
     int cli_sock = create_local_client_socket_and_connect(KOS_TESTING_PORT);
     if (0 > cli_sock) {
-        fprintf(stderr, "%s(): Failed to creat client's socket: %s\n", __func__, strerror(errno));
+        fprintf(stderr, "%s(): Failed to create client's socket: %s\n", __func__, strerror(errno));
         goto next_step;
     } else {
         size_t send_res = send(cli_sock, real_command, strlen(real_command), 0);

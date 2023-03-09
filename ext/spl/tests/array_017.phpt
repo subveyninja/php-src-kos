@@ -5,6 +5,7 @@ SPL: ArrayObject::exchangeArray($this)
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class ArrayIteratorEx extends ArrayIterator
 {
     public    $pub2 = 1;
@@ -26,13 +27,14 @@ class ArrayIteratorEx extends ArrayIterator
                       ,'$this'=>$this));
     }
 
-    function setFlags($flags)
+    function setFlags($flags): void
     {
         echo __METHOD__ . "($flags)\n";
         ArrayIterator::setFlags($flags);
     }
 }
 
+#[AllowDynamicProperties]
 class ArrayObjectEx extends ArrayObject
 {
     public    $pub1 = 1;
@@ -69,13 +71,13 @@ class ArrayObjectEx extends ArrayObject
         }
     }
 
-    function setFlags($flags)
+    function setFlags($flags): void
     {
         echo __METHOD__ . "($flags)\n";
         ArrayObject::setFlags($flags);
     }
 
-    function getIterator()
+    function getIterator(): Iterator
     {
         echo __METHOD__ . "()\n";
         $it = new ArrayIteratorEx($this, $this->getFlags());

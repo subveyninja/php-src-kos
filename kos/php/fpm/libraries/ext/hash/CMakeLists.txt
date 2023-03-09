@@ -15,9 +15,13 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/hash/hash_fnv.c
     ${PHP_SRC_ROOT}/ext/hash/hash_joaat.c
     ${PHP_SRC_ROOT}/ext/hash/hash_sha3.c
+    ${PHP_SRC_ROOT}/ext/hash/hash_murmur.c
+    ${PHP_SRC_ROOT}/ext/hash/hash_xxhash.c
     ${PHP_SRC_ROOT}/ext/hash/sha3/generic64lc/KeccakP-1600-opt64.c
     ${PHP_SRC_ROOT}/ext/hash/sha3/generic64lc/KeccakHash.c
     ${PHP_SRC_ROOT}/ext/hash/sha3/generic64lc/KeccakSponge.c
+    ${PHP_SRC_ROOT}/ext/hash/murmur/PMurHash.c
+    ${PHP_SRC_ROOT}/ext/hash/murmur/PMurHash128.c
 )
 
 add_library(${TARGET_NAME}
@@ -27,8 +31,9 @@ add_library(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${PHP_SRC_ROOT}/ext/hash/sha3/generic64lc/
         ${PHP_SRC_ROOT}/ext/hash/
+        ${PHP_SRC_ROOT}/ext/hash/sha3/generic64lc
+        ${PHP_SRC_ROOT}/ext/hash/xxhash
 )
 
 target_compile_definitions(${TARGET_NAME}

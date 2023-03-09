@@ -16,14 +16,14 @@
 #define ZEND_DLIMPORT
 
 
-/* build architecture */
-/* #undef ARCHITECTURE */
+/* Uses cmsgcred struct */
+/* #undef ANC_CREDS_CMSGCRED */
+
+/* Uses ucred struct */
+/* #undef ANC_CREDS_UCRED */
 
 /* */
 /* #undef CDB_INCLUDE_FILE */
-
-/* used compiler for build */
-/* #undef COMPILER */
 
 /* Whether to build bcmath as dynamic module */
 /* #undef COMPILE_DL_BCMATH */
@@ -45,6 +45,9 @@
 
 /* Whether to build dba as dynamic module */
 /* #undef COMPILE_DL_DBA */
+
+/* Whether to build dl_test as dynamic module */
+/* #undef COMPILE_DL_DL_TEST */
 
 /* Whether to build dom as dynamic module */
 /* #undef COMPILE_DL_DOM */
@@ -90,9 +93,6 @@
 
 /* Whether to build json as dynamic module */
 /* #undef COMPILE_DL_JSON */
-
-/* Whether to build kos as dynamic module */
-/* #undef COMPILE_DL_KOS */
 
 /* Whether to build ldap as dynamic module */
 /* #undef COMPILE_DL_LDAP */
@@ -157,14 +157,14 @@
 /* Whether to build phar as dynamic module */
 /* #undef COMPILE_DL_PHAR */
 
-/* Whether to build phpdbg_webhelper as dynamic module */
-/* #undef COMPILE_DL_PHPDBG_WEBHELPER */
-
 /* Whether to build posix as dynamic module */
 /* #undef COMPILE_DL_POSIX */
 
 /* Whether to build pspell as dynamic module */
 /* #undef COMPILE_DL_PSPELL */
+
+/* Whether to build random as dynamic module */
+/* #undef COMPILE_DL_RANDOM */
 
 /* Whether to build readline as dynamic module */
 /* #undef COMPILE_DL_READLINE */
@@ -337,7 +337,7 @@
 /* #undef DLSYM_NEEDS_UNDERSCORE */
 
 /* Whether to enable chroot() function */
-#define ENABLE_CHROOT_FUNC 1
+/* #undef ENABLE_CHROOT_FUNC */
 
 /* */
 /* #undef GDBM_INCLUDE_FILE */
@@ -379,7 +379,7 @@
 /* AppArmor confinement available */
 /* #undef HAVE_APPARMOR */
 
-/* Define to 1 if you have the <argon2.h> header file */
+/* */
 /* #undef HAVE_ARGON2LIB */
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
@@ -392,7 +392,7 @@
 #define HAVE_ASCTIME_R 1
 
 /* Define if asm goto support */
-/* #undef HAVE_ASM_GOTO */
+#define HAVE_ASM_GOTO 1
 
 /* Define to 1 if you have the `asprintf' function. */
 #define HAVE_ASPRINTF 1
@@ -419,7 +419,7 @@
 #define HAVE_BUILD_DEFS_H 1
 
 /* Define to 1 if gcc supports __sync_bool_compare_and_swap() a.o. */
-/* #undef HAVE_BUILTIN_ATOMIC */
+#define HAVE_BUILTIN_ATOMIC 1
 
 /* */
 #define HAVE_BUNDLED_PCRE 1
@@ -433,15 +433,14 @@
 /* Libzip >= 1.6.0 with zip_register_cancel_callback_with_state function */
 /* #undef HAVE_CANCEL_CALLBACK */
 
+/* */
+/* #undef HAVE_CAPSTONE */
+
 /* Define to 1 if you have the `chroot' function. */
 #define HAVE_CHROOT 1
 
 /* Define to 1 if you have the `clearenv' function. */
-#ifdef __KOS__
 /* #undef HAVE_CLEARENV */
-#else
-#define HAVE_CLEARENV 1
-#endif
 
 /* */
 /* #undef HAVE_CLI0CLI_H */
@@ -459,7 +458,7 @@
 /* #undef HAVE_CLI0EXT_H */
 
 /* do we have clock_gettime? */
-/* #undef HAVE_CLOCK_GETTIME */
+#define HAVE_CLOCK_GETTIME 1
 
 /* do we have clock_get_time? */
 /* #undef HAVE_CLOCK_GET_TIME */
@@ -467,17 +466,23 @@
 /* */
 /* #undef HAVE_CODBC */
 
+/* Define to 1 if you have the <CommonCrypto/CommonRandom.h> header file. */
+/* #undef HAVE_COMMONCRYPTO_COMMONRANDOM_H */
+
+/* Define if copy_file_range support */
+/* #undef HAVE_COPY_FILE_RANGE */
+
 /* whether __cpuid_count is available */
-#define HAVE_CPUID_COUNT 1
+/* #undef HAVE_CPUID_COUNT */
 
 /* Define to 1 if you have the <cpuid.h> header file. */
-#define HAVE_CPUID_H 1
+/* #undef HAVE_CPUID_H */
 
 /* Define to 1 if you have the `CreateProcess' function. */
 /* #undef HAVE_CREATEPROCESS */
 
 /* */
-#define HAVE_CRYPT 1
+/* #undef HAVE_CRYPT */
 
 /* Define to 1 if you have the <crypt.h> header file. */
 /* #undef HAVE_CRYPT_H */
@@ -584,11 +589,7 @@
 /* #undef HAVE_EXIF */
 
 /* Define to 1 if you have the `explicit_bzero' function. */
-#ifdef __KOS__
 /* #undef HAVE_EXPLICIT_BZERO */
-#else
-#define HAVE_EXPLICIT_BZERO 1
-#endif
 
 /* Define to 1 if you have the `explicit_memset' function. */
 #define HAVE_EXPLICIT_MEMSET 1
@@ -598,6 +599,9 @@
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H 1
+
+/* Define to 1 if you have the `fdatasync' function. */
+#define HAVE_FDATASYNC 1
 
 /* Have ffi support */
 /* #undef HAVE_FFI */
@@ -639,20 +643,19 @@
 /* #undef HAVE_FOPENCOOKIE */
 
 /* Define to 1 if you have the `fork' function. */
-#ifndef __KOS__
-#define HAVE_FORK 1
-#endif
+/* #undef HAVE_FORK */
 
-/* POSIX Access Control List */
+/* Define to 1 if you have the `forkx' function. */
+/* #undef HAVE_FORKX */
+
+/* do we have acl support? */
 /* #undef HAVE_FPM_ACL */
 
 /* whether fpsetprec is present and usable */
 /* #undef HAVE_FPSETPREC */
 
 /* whether FPU control word can be manipulated by inline assembler */
-#ifndef __KOS__
-#define HAVE_FPU_INLINE_ASM_X86 1
-#endif
+/* #undef HAVE_FPU_INLINE_ASM_X86 */
 
 /* Define to 1 if you have the `ftok' function. */
 /* #undef HAVE_FTOK */
@@ -667,7 +670,7 @@
 /* #undef HAVE_FUNC_ATTRIBUTE_IFUNC */
 
 /* Define to 1 if the system has the `target' function attribute */
-#define HAVE_FUNC_ATTRIBUTE_TARGET 1
+/* #undef HAVE_FUNC_ATTRIBUTE_TARGET */
 
 /* Define to 1 if you have the three-argument form of gethostbyname_r(). */
 /* #undef HAVE_FUNC_GETHOSTBYNAME_R_3 */
@@ -679,9 +682,7 @@
 /* #undef HAVE_FUNC_GETHOSTBYNAME_R_6 */
 
 /* Define to 1 if you have the `funopen' function. */
-#ifdef __KOS__
 #define HAVE_FUNOPEN 1
-#endif
 
 /* Define to 1 if you have the `gai_strerror' function. */
 #define HAVE_GAI_STRERROR 1
@@ -691,6 +692,9 @@
 
 /* Whether you have gcov */
 /* #undef HAVE_GCOV */
+
+/* */
+/* #undef HAVE_GD_AVIF */
 
 /* */
 /* #undef HAVE_GD_BMP */
@@ -870,7 +874,7 @@
 /* #undef HAVE_IMAP_SSL */
 
 /* Define to 1 if you have the <immintrin.h> header file. */
-#define HAVE_IMMINTRIN_H 1
+/* #undef HAVE_IMMINTRIN_H */
 
 /* */
 #define HAVE_INET_ATON 1
@@ -932,9 +936,6 @@
 /* Define to 1 if you have the `kill' function. */
 #define HAVE_KILL 1
 
-/* Have kos support */
-#define HAVE_KOS 1
-
 /* do we have kqueue? */
 /* #undef HAVE_KQUEUE */
 
@@ -979,6 +980,9 @@
 
 /* Define to 1 if you have the `ldap_whoami_s' function. */
 /* #undef HAVE_LDAP_WHOAMI_S */
+
+/* */
+/* #undef HAVE_LIBAVIF */
 
 /* */
 /* #undef HAVE_LIBBIND */
@@ -1067,6 +1071,12 @@
 /* Libzip >= 1.3.1 with zip_libzip_version function */
 /* #undef HAVE_LIBZIP_VERSION */
 
+/* Define to 1 if you have the <linux/filter.h> header file. */
+/* #undef HAVE_LINUX_FILTER_H */
+
+/* Define to 1 if you have the <linux/sock_diag.h> header file. */
+/* #undef HAVE_LINUX_SOCK_DIAG_H */
+
 /* Define to 1 if you have the `localtime_r' function. */
 #define HAVE_LOCALTIME_R 1
 
@@ -1076,8 +1086,11 @@
 /* do we have SO_LISTENQxxx? */
 /* #undef HAVE_LQ_SO_LISTENQ */
 
+/* do we have TCP_CONNECTION_INFO? */
+/* #undef HAVE_LQ_TCP_CONNECTION_INFO */
+
 /* do we have TCP_INFO? */
-/* #undef HAVE_LQ_TCP_INFO */
+#define HAVE_LQ_TCP_INFO 1
 
 /* do we have mach_vm_read? */
 /* #undef HAVE_MACH_VM_READ */
@@ -1094,6 +1107,9 @@
 /* whether to have multibyte string support */
 /* #undef HAVE_MBSTRING */
 
+/* Define to 1 if you have the `memcntl' function. */
+/* #undef HAVE_MEMCNTL */
+
 /* Define to 1 if you have the `memmem' function. */
 #define HAVE_MEMMEM 1
 
@@ -1102,6 +1118,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
+
+/* Define to 1 if you have the `memrchr' function. */
+#define HAVE_MEMRCHR 1
 
 /* Libzip >= 1.7.0 with zip_*_method_supported functions */
 /* #undef HAVE_METHOD_SUPPORTED */
@@ -1128,9 +1147,6 @@
 /* #undef HAVE_MYSQL */
 
 /* */
-/* #undef HAVE_MYSQLILIB */
-
-/* */
 #define HAVE_NANOSLEEP 1
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
@@ -1155,7 +1171,7 @@
 #define HAVE_NL_LANGINFO 1
 
 /* Define to 1 if you have the <nmmintrin.h> header file. */
-#define HAVE_NMMINTRIN_H 1
+/* #undef HAVE_NMMINTRIN_H */
 
 /* Defined to 1 if the PHP OCI8 extension for Oracle Database is configured */
 /* #undef HAVE_OCI8 */
@@ -1168,6 +1184,9 @@
 
 /* */
 /* #undef HAVE_OCIENVNLSCREATE */
+
+/* */
+/* #undef HAVE_OCILOBREAD2 */
 
 /* */
 /* #undef HAVE_OCISTMTFETCH2 */
@@ -1199,6 +1218,9 @@
 
 /* */
 /* #undef HAVE_ORALDAP */
+
+/* Define to 1 if you have the <os/signpost.h> header file. */
+/* #undef HAVE_OS_SIGNPOST_H */
 
 /* */
 /* #undef HAVE_PCRE_JIT_SUPPORT */
@@ -1254,6 +1276,9 @@
 /* */
 /* #undef HAVE_PREAD */
 
+/* do we have procctl? */
+/* #undef HAVE_PROCCTL */
+
 /* Libzip >= 1.3.0 with zip_register_progress_callback_with_state function */
 /* #undef HAVE_PROGRESS_CALLBACK */
 
@@ -1262,6 +1287,9 @@
 
 /* Define to 1 if the PS_STRINGS thing exists. */
 /* #undef HAVE_PS_STRINGS */
+
+/* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
+/* #undef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP */
 
 /* do we have ptrace? */
 /* #undef HAVE_PTRACE */
@@ -1299,6 +1327,9 @@
 /* */
 /* #undef HAVE_RFC822_OUTPUT_ADDRESS_LIST */
 
+/* Define to 1 if you have the `rfork' function. */
+/* #undef HAVE_RFORK */
+
 /* */
 /* #undef HAVE_RL_CALLBACK_READ_CHAR */
 
@@ -1318,7 +1349,13 @@
 #define HAVE_SCANDIR 1
 
 /* do we have select? */
-/* #undef HAVE_SELECT */
+#define HAVE_SELECT 1
+
+/* SElinux available */
+/* #undef HAVE_SELINUX */
+
+/* Define to 1 if you have the <selinux/selinux.h> header file. */
+/* #undef HAVE_SELINUX_SELINUX_H */
 
 /* */
 /* #undef HAVE_SEMUN */
@@ -1334,6 +1371,9 @@
 
 /* Define to 1 if you have the `setitimer' function. */
 #define HAVE_SETITIMER 1
+
+/* do we have setpflags? */
+/* #undef HAVE_SETPFLAGS */
 
 /* Define to 1 if you have the `setpriority' function. */
 /* #undef HAVE_SETPRIORITY */
@@ -1395,11 +1435,17 @@
 /* */
 #define HAVE_SIMPLEXML 1
 
-/* Define is hash3 algo is available */
+/* Define if hash3 algo is available */
 /* #undef HAVE_SLOW_HASH3 */
 
 /* */
 /* #undef HAVE_SNMP */
+
+/* */
+/* #undef HAVE_SNMP_SHA256 */
+
+/* */
+/* #undef HAVE_SNMP_SHA512 */
 
 /* */
 /* #undef HAVE_SOAP */
@@ -1411,9 +1457,7 @@
 #define HAVE_SOCKADDR_STORAGE 1
 
 /* Define if sockaddr_un in sys/un.h contains a sun_len component */
-#ifdef __KOS__
 #define HAVE_SOCKADDR_UN_SUN_LEN 1
-#endif
 
 /* */
 #define HAVE_SOCKET 1
@@ -1493,6 +1537,9 @@
 /* Define to 1 if you have the `strcasecmp' function. */
 #define HAVE_STRCASECMP 1
 
+/* Define to 1 if you have the `strerror_r' function. */
+#define HAVE_STRERROR_R 1
+
 /* Define to 1 if you have the <strings.h> header file. */
 #define HAVE_STRINGS_H 1
 
@@ -1500,14 +1547,10 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcat' function. */
-#ifdef __KOS__
 #define HAVE_STRLCAT 1
-#endif
 
 /* Define to 1 if you have the `strlcpy' function. */
-#ifdef __KOS__
 #define HAVE_STRLCPY 1
-#endif
 
 /* Define to 1 if you have the `strndup' function. */
 #define HAVE_STRNDUP 1
@@ -1553,7 +1596,7 @@
 #define HAVE_SYMLINK 1
 
 /* do we have sysconf? */
-/* #undef HAVE_SYSCONF */
+#define HAVE_SYSCONF 1
 
 /* Define to 1 if you have the <sysexits.h> header file. */
 /* #undef HAVE_SYSEXITS_H */
@@ -1684,13 +1727,14 @@
 /* Have timelib_config.h */
 #define HAVE_TIMELIB_CONFIG_H 1
 
+/* */
+/* #undef HAVE_TIMER_CREATE */
+
 /* do we have times? */
-#ifndef __KOS__
 #define HAVE_TIMES 1
-#endif
 
 /* Define to 1 if you have the <tmmintrin.h> header file. */
-#define HAVE_TMMINTRIN_H 1
+/* #undef HAVE_TMMINTRIN_H */
 
 /* Define to 1 if your `struct tm' has `tm_zone'. Deprecated, use
    `HAVE_STRUCT_TM_TM_ZONE' instead. */
@@ -1739,6 +1783,10 @@
 /* */
 /* #undef HAVE_UODBC */
 
+/* Whether faulting on write-protected memory support can be compiled for
+   userfaultfd */
+/* #undef HAVE_USERFAULTFD_WRITEFAULT */
+
 /* Define to 1 if you have the `usleep' function. */
 #define HAVE_USLEEP 1
 
@@ -1770,7 +1818,7 @@
 /* #undef HAVE_WAITPID */
 
 /* Define to 1 if you have the <wmmintrin.h> header file. */
-#define HAVE_WMMINTRIN_H 1
+/* #undef HAVE_WMMINTRIN_H */
 
 /* */
 #define HAVE_XML 1
@@ -1835,9 +1883,6 @@
 /* Whether strtok_r is declared */
 /* #undef MISSING_STRTOK_R_DECL */
 
-/* Whether mysqlnd is enabled */
-/* #undef MYSQLI_USE_MYSQLND */
-
 /* Enable compressed protocol support */
 /* #undef MYSQLND_COMPRESSION_ENABLED */
 
@@ -1886,25 +1931,29 @@
 /* */
 #define PHPDBG_DEBUG 0
 
+/* build architecture */
+/* #undef PHP_BUILD_ARCH */
+
+/* used compiler for build */
+/* #undef PHP_BUILD_COMPILER */
+
 /* build provider */
 /* #undef PHP_BUILD_PROVIDER */
 
 /* builder uname output */
-#define PHP_BUILD_SYSTEM "Linux desktop 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux"
+#define PHP_BUILD_SYSTEM "Linux notebook 5.15.0-67-generic #74~20.04.1-Ubuntu SMP Wed Feb 22 14:52:34 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux"
 
 /* Define if your system has fork/vfork/CreateProcess */
-#ifndef __KOS__
-#define PHP_CAN_SUPPORT_PROC_OPEN 1
-#endif
+/* #undef PHP_CAN_SUPPORT_PROC_OPEN */
 
 /* fpm group name */
-/* #undef PHP_FPM_GROUP */
+#define PHP_FPM_GROUP "nobody"
 
 /* fpm systemd service type */
-/* #undef PHP_FPM_SYSTEMD */
+#define PHP_FPM_SYSTEMD "simple"
 
 /* fpm user name */
-/* #undef PHP_FPM_USER */
+#define PHP_FPM_USER "nobody"
 
 /* Whether the compiler supports __builtin_clz */
 #define PHP_HAVE_BUILTIN_CLZ 1
@@ -1916,10 +1965,10 @@
 #define PHP_HAVE_BUILTIN_CLZLL 1
 
 /* Whether the compiler supports __builtin_cpu_init */
-#define PHP_HAVE_BUILTIN_CPU_INIT 1
+#define PHP_HAVE_BUILTIN_CPU_INIT 0
 
 /* Whether the compiler supports __builtin_cpu_supports */
-#define PHP_HAVE_BUILTIN_CPU_SUPPORTS 1
+#define PHP_HAVE_BUILTIN_CPU_SUPPORTS 0
 
 /* Whether the compiler supports __builtin_ctzl */
 #define PHP_HAVE_BUILTIN_CTZL 1
@@ -1992,9 +2041,9 @@
 #define PHP_SIGCHILD 0
 
 /* uname -a output */
-#define PHP_UNAME "Linux desktop 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux"
+#define PHP_UNAME "Linux notebook 5.15.0-67-generic #74~20.04.1-Ubuntu SMP Wed Feb 22 14:52:34 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux"
 
-/* Whether PHP has to use its own crypt_r for blowfish, des and ext des */
+/* Whether PHP has to use its own crypt_r */
 #define PHP_USE_PHP_CRYPT_R 1
 
 /* Use dlopen with RTLD_NOW instead of RTLD_LAZY */
@@ -2102,14 +2151,23 @@
 /* */
 #define ZEND_DEBUG 0
 
-/* Define if double cast to long preserves least significant bits */
-/* #undef ZEND_DVAL_TO_LVAL_CAST_OK */
+/* */
+#define ZEND_FIBER_ASM 1
 
 /* */
-/* #undef ZEND_MM_ALIGNMENT */
+/* #undef ZEND_FIBER_UCONTEXT */
+
+/* Use zend max execution timers */
+/* #undef ZEND_MAX_EXECUTION_TIMERS */
 
 /* */
-/* #undef ZEND_MM_ALIGNMENT_LOG2 */
+#define ZEND_MM_ALIGNMENT 8
+
+/* */
+#define ZEND_MM_ALIGNMENT_LOG2 3
+
+/* */
+#define ZEND_MM_NEED_EIGHT_BYTE_REALIGNMENT 0
 
 /* Use zend signal handling */
 #define ZEND_SIGNALS 1
@@ -2126,6 +2184,12 @@
 
 /* Define to 1 if you need to in order for `stat' and other things to work. */
 /* #undef _POSIX_SOURCE */
+
+/* */
+/* #undef _XOPEN_SOURCE */
+
+/* Define when using musl libc */
+/* #undef __MUSL__ */
 
 /* Define to `int' if <sys/types.h> doesn't define. */
 /* #undef gid_t */

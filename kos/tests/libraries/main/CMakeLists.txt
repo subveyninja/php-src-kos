@@ -5,8 +5,8 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/main/snprintf.c
     ${PHP_SRC_ROOT}/main/spprintf.c
     ${PHP_SRC_ROOT}/main/fopen_wrappers.c
-    ${PHP_SRC_ROOT}/main/alloca.c
     ${PHP_SRC_ROOT}/main/php_scandir.c
+    ${PHP_SRC_ROOT}/main/php_ini_builder.c
     ${PHP_SRC_ROOT}/main/php_ini.c
     ${PHP_SRC_ROOT}/main/SAPI.c
     ${PHP_SRC_ROOT}/main/rfc1867.c
@@ -19,6 +19,8 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/main/php_ticks.c
     ${PHP_SRC_ROOT}/main/network.c
     ${PHP_SRC_ROOT}/main/php_open_temporary_file.c
+    ${PHP_SRC_ROOT}/main/php_odbc_utils.c
+    ${PHP_SRC_ROOT}/main/safe_bcmp.c
     ${PHP_SRC_ROOT}/main/output.c
     ${PHP_SRC_ROOT}/main/getopt.c
     ${PHP_SRC_ROOT}/main/php_syslog.c
@@ -29,6 +31,11 @@ set(TARGET_SRC
 add_library(${TARGET_NAME}
     STATIC
         ${TARGET_SRC}
+)
+
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+        ${PHP_SRC_ROOT}/main/
 )
 
 target_compile_definitions(${TARGET_NAME}

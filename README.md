@@ -4,7 +4,7 @@
 
 ## What is a PHP Interpreter for KasperskyOS?
 
-The PHP Interpreter for KasperskyOS is based on the [PHP-8.0](https://github.com/php/php-src/tree/PHP-8.0). Please refer to [README.md](https://github.com/php/php-src/blob/master/README.md) for more information about the original PHP Interpreter not related to this project.
+The PHP Interpreter for KasperskyOS is based on the [PHP-8.2](https://github.com/php/php-src/tree/PHP-8.2). Please refer to [README.md](https://github.com/php/php-src/blob/master/README.md) for more information about the original PHP Interpreter not related to this project.
 
 The PHP Interpreter for KasperskyOS has the following limitations:
 

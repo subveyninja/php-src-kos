@@ -1,6 +1,27 @@
 set(TARGET_NAME Zend)
 
 set(TARGET_SRC
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_optimizer.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/pass1.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/pass3.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/optimize_func_calls.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/block_pass.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/optimize_temp_vars_5.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/nop_removal.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/compact_literals.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_cfg.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_dfg.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/dfa_pass.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_ssa.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_inference.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_func_info.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_call_graph.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/sccp.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/scdf.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/dce.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/escape_analysis.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/compact_vars.c
+    ${PHP_SRC_ROOT}/Zend/Optimizer/zend_dump.c
     ${PHP_SRC_ROOT}/Zend/zend_language_parser.c
     ${PHP_SRC_ROOT}/Zend/zend_language_scanner.c
     ${PHP_SRC_ROOT}/Zend/zend_ini_parser.c
@@ -29,7 +50,6 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/Zend/zend_ini.c
     ${PHP_SRC_ROOT}/Zend/zend_sort.c
     ${PHP_SRC_ROOT}/Zend/zend_multibyte.c
-    ${PHP_SRC_ROOT}/Zend/zend_ts_hash.c
     ${PHP_SRC_ROOT}/Zend/zend_stream.c
     ${PHP_SRC_ROOT}/Zend/zend_iterators.c
     ${PHP_SRC_ROOT}/Zend/zend_interfaces.c
@@ -54,11 +74,23 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/Zend/zend_gdb.c
     ${PHP_SRC_ROOT}/Zend/zend_observer.c
     ${PHP_SRC_ROOT}/Zend/zend_system_id.c
+    ${PHP_SRC_ROOT}/Zend/zend_enum.c
+    ${PHP_SRC_ROOT}/Zend/zend_fibers.c
+    ${PHP_SRC_ROOT}/Zend/zend_atomic.c
+    ${PHP_SRC_ROOT}/Zend/zend_max_execution_timer.c
+    ${PHP_SRC_ROOT}/Zend/asm/make_arm64_aapcs_elf_gas.S
+    ${PHP_SRC_ROOT}/Zend/asm/jump_arm64_aapcs_elf_gas.S
 )
 
 add_library(${TARGET_NAME}
     STATIC
         ${TARGET_SRC}
+)
+
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+        ${PHP_SRC_ROOT}/Zend/
+        ${PHP_SRC_ROOT}/Zend/asm/
 )
 
 target_compile_definitions(${TARGET_NAME}

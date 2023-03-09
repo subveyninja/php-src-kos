@@ -9,6 +9,11 @@ add_library(${TARGET_NAME}
         ${TARGET_SRC}
 )
 
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+        ${PHP_SRC_ROOT}/TSRM/
+)
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         ZEND_ENABLE_STATIC_TSRMLS_CACHE=1

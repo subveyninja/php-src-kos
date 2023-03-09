@@ -27,7 +27,6 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/standard/image.c
     ${PHP_SRC_ROOT}/ext/standard/info.c
     ${PHP_SRC_ROOT}/ext/standard/iptc.c
-    ${PHP_SRC_ROOT}/ext/standard/lcg.c
     ${PHP_SRC_ROOT}/ext/standard/link.c
     ${PHP_SRC_ROOT}/ext/standard/mail.c
     ${PHP_SRC_ROOT}/ext/standard/math.c
@@ -37,8 +36,6 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/standard/pack.c
     ${PHP_SRC_ROOT}/ext/standard/pageinfo.c
     ${PHP_SRC_ROOT}/ext/standard/quot_print.c
-    ${PHP_SRC_ROOT}/ext/standard/rand.c
-    ${PHP_SRC_ROOT}/ext/standard/mt_rand.c
     ${PHP_SRC_ROOT}/ext/standard/soundex.c
     ${PHP_SRC_ROOT}/ext/standard/string.c
     ${PHP_SRC_ROOT}/ext/standard/scanf.c
@@ -69,20 +66,16 @@ set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/standard/streamsfuncs.c
     ${PHP_SRC_ROOT}/ext/standard/http.c
     ${PHP_SRC_ROOT}/ext/standard/password.c
-    ${PHP_SRC_ROOT}/ext/standard/random.c
     ${PHP_SRC_ROOT}/ext/standard/net.c
     ${PHP_SRC_ROOT}/ext/standard/hrtime.c
     ${PHP_SRC_ROOT}/ext/standard/crc32_x86.c
+    ${PHP_SRC_ROOT}/ext/standard/libavifinfo/avifinfo.c
 )
 
 add_library(${TARGET_NAME}
     STATIC
         ${TARGET_SRC}
 )
-
-if (KOS)
-    target_link_libraries(${TARGET_NAME} PUBLIC z)
-endif ()
 
 target_include_directories(${TARGET_NAME}
     PRIVATE
@@ -95,3 +88,7 @@ target_compile_definitions(${TARGET_NAME}
         ZEND_ENABLE_STATIC_TSRMLS_CACHE=1
         ZEND_SIGNALS
 )
+
+if (KOS)
+    target_link_libraries(${TARGET_NAME} PUBLIC z)
+endif ()

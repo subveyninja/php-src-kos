@@ -3,7 +3,6 @@ set(TARGET_NAME ext_spl)
 set(TARGET_SRC
     ${PHP_SRC_ROOT}/ext/spl/php_spl.c
     ${PHP_SRC_ROOT}/ext/spl/spl_functions.c
-    ${PHP_SRC_ROOT}/ext/spl/spl_engine.c
     ${PHP_SRC_ROOT}/ext/spl/spl_iterators.c
     ${PHP_SRC_ROOT}/ext/spl/spl_array.c
     ${PHP_SRC_ROOT}/ext/spl/spl_directory.c
@@ -26,6 +25,6 @@ target_include_directories(${TARGET_NAME}
 
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
-        ZEND_ENABLE_STATIC_TSRMLS_CACHE=1
         ZEND_SIGNALS
+        ZEND_ENABLE_STATIC_TSRMLS_CACHE=1
 )

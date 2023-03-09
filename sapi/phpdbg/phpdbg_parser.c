@@ -103,8 +103,8 @@
 
 /* Use api.header.include to #include this header
    instead of duplicating it here.  */
-#ifndef YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
-# define YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
+#ifndef YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
+# define YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef PHPDBG_DEBUG
 # if defined YYDEBUG
@@ -121,7 +121,7 @@
 extern int phpdbg_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 7 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 7 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
 
 #include "phpdbg.h"
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -129,13 +129,14 @@ extern int phpdbg_debug;
 typedef void* yyscan_t;
 #endif
 
-#line 133 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 133 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
 
 /* Token type.  */
 #ifndef PHPDBG_TOKENTYPE
 # define PHPDBG_TOKENTYPE
   enum phpdbg_tokentype
   {
+    END = 0,
     T_EVAL = 258,
     T_RUN = 259,
     T_SHELL = 260,
@@ -170,11 +171,11 @@ typedef phpdbg_param_t PHPDBG_STYPE;
 
 int phpdbg_parse (void);
 
-#endif /* !YY_PHPDBG_HOME_ENORKIN_STUFF_KOS_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED  */
+#endif /* !YY_PHPDBG_HOME_ENORKIN_KOS_TMP_PHP_SRC_SAPI_PHPDBG_PHPDBG_PARSER_H_INCLUDED  */
 
 
 /* Unqualified %code blocks.  */
-#line 15 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 15 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
 
 
 #include "phpdbg_cmd.h"
@@ -196,7 +197,7 @@ ZEND_EXTERN_MODULE_GLOBALS(phpdbg)
 #endif
 
 
-#line 200 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 201 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
 
 #ifdef short
 # undef short
@@ -558,10 +559,10 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    66,    66,    67,    68,    72,    73,    77,    78,    79,
-      83,    88,    93,   103,   113,   118,   124,   130,   135,   136,
-     137,   138,   139,   140,   141,   145,   146,   150,   155,   160,
-     164
+       0,    67,    67,    68,    69,    73,    74,    78,    79,    80,
+      84,    89,    94,   104,   114,   119,   125,   131,   136,   137,
+     138,   139,   140,   141,   142,   146,   147,   151,   156,   161,
+     165
 };
 #endif
 
@@ -570,8 +571,9 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "\"eval\"", "\"run\"", "\"shell\"",
-  "\"if (condition)\"", "\"truthy (true, on, yes or enabled)\"",
+  "\"end of command\"", "error", "$undefined", "\"eval\"", "\"run\"",
+  "\"shell\"", "\"if (condition)\"",
+  "\"truthy (true, on, yes or enabled)\"",
   "\"falsy (false, off, no or disabled)\"",
   "\"string (some input, perhaps)\"", "\": (colon)\"",
   "\":: (double colon)\"", "\"# (pound sign followed by digits)\"",
@@ -1389,69 +1391,75 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 66 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 67 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                   { yyval = yyvsp[0]; }
-#line 1395 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1397 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 3:
-#line 67 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 68 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                     { phpdbg_stack_separate(yyvsp[-2].top); yyval = yyvsp[0]; }
-#line 1401 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1403 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
+    break;
+
+  case 4:
+#line 69 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
+                 { (void) phpdbg_nerrs; }
+#line 1409 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 5:
-#line 72 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 73 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                      { yyval.top = PHPDBG_G(parser_stack)->top; }
-#line 1407 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1415 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 6:
-#line 73 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 74 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                           { phpdbg_stack_push(PHPDBG_G(parser_stack), &yyvsp[0]); yyval.top = PHPDBG_G(parser_stack)->top; }
-#line 1413 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1421 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 7:
-#line 77 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 78 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                     { phpdbg_stack_push(PHPDBG_G(parser_stack), &yyvsp[0]); yyval.top = PHPDBG_G(parser_stack)->top; }
-#line 1419 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1427 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 8:
-#line 78 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 79 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                { phpdbg_stack_push(PHPDBG_G(parser_stack), &yyvsp[0]); yyval.top = PHPDBG_G(parser_stack)->top; }
-#line 1425 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1433 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 9:
-#line 79 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 80 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                               { yyval = yyvsp[-1]; PHPDBG_G(req_id) = yyvsp[0].num; }
-#line 1431 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1439 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 10:
-#line 83 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 84 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                 {
 		yyval.type = FILE_PARAM;
 		yyval.file.name = yyvsp[-1].str;
 		yyval.file.line = yyvsp[0].num;
 	}
-#line 1441 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1449 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 11:
-#line 88 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 89 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                         {
 		yyval.type = NUMERIC_FILE_PARAM;
 		yyval.file.name = yyvsp[-3].str;
 		yyval.file.line = yyvsp[0].num;
 	}
-#line 1451 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1459 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 12:
-#line 93 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 94 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                         {
 		yyval.type = FILE_PARAM;
 		yyval.file.name = malloc(yyvsp[-3].len + yyvsp[-2].len + 1);
@@ -1462,11 +1470,11 @@ yyreduce:
 		}
 		yyval.file.line = yyvsp[0].num;
 	}
-#line 1466 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1474 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 13:
-#line 103 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 104 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                                 {
 		yyval.type = NUMERIC_FILE_PARAM;
 		yyval.file.name = malloc(yyvsp[-4].len + yyvsp[-3].len + 1);
@@ -1477,140 +1485,140 @@ yyreduce:
 		}
 		yyval.file.line = yyvsp[0].num;
 	}
-#line 1481 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1489 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 14:
-#line 113 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 114 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                              {
 		yyval.type = METHOD_PARAM;
 		yyval.method.class = yyvsp[-2].str;
 		yyval.method.name = yyvsp[0].str;
 	}
-#line 1491 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1499 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 15:
-#line 118 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 119 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                               {
 		yyval.type = NUMERIC_METHOD_PARAM;
 		yyval.method.class = yyvsp[-4].str;
 		yyval.method.name = yyvsp[-2].str;
 		yyval.num = yyvsp[0].num;
 	}
-#line 1502 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1510 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 16:
-#line 124 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 125 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                 {
 		yyval.type = NUMERIC_FUNCTION_PARAM;
 		yyval.str = yyvsp[-2].str;
 		yyval.len = yyvsp[-2].len;
 		yyval.num = yyvsp[0].num;
 	}
-#line 1513 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1521 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 17:
-#line 130 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 131 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                        {
 		yyval.type = COND_PARAM;
 		yyval.str = yyvsp[0].str;
 		yyval.len = yyvsp[0].len;
 	}
-#line 1523 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1531 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 18:
-#line 135 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 136 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                    { yyval = yyvsp[0]; }
-#line 1529 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1537 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 19:
-#line 136 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 137 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                  { yyval = yyvsp[0]; }
-#line 1535 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1543 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 20:
-#line 137 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 138 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                     { yyval = yyvsp[0]; }
-#line 1541 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1549 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 21:
-#line 138 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 139 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                    { yyval = yyvsp[0]; }
-#line 1547 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1555 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 22:
-#line 139 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 140 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                   { yyval = yyvsp[0]; }
-#line 1553 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1561 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 23:
-#line 140 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 141 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                    { yyval = yyvsp[0]; }
-#line 1559 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1567 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 24:
-#line 141 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 142 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                { yyval = yyvsp[0]; }
-#line 1565 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1573 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 25:
-#line 145 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 146 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                    { PHPDBG_G(req_id) = yyvsp[0].num; }
-#line 1571 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1579 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 27:
-#line 150 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 151 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                 {
 		yyval.type = EVAL_PARAM;
 		yyval.str = yyvsp[0].str;
 		yyval.len = yyvsp[0].len;
 	}
-#line 1581 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1589 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 28:
-#line 155 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 156 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                  {
 		yyval.type = SHELL_PARAM;
 		yyval.str = yyvsp[0].str;
 		yyval.len = yyvsp[0].len;
 	}
-#line 1591 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1599 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 29:
-#line 160 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 161 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                        {
 		yyval.type = RUN_PARAM;
 		yyval.len = 0;
 	}
-#line 1600 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1608 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
   case 30:
-#line 164 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 165 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
                                {
 		yyval.type = RUN_PARAM;
 		yyval.str = yyvsp[0].str;
 		yyval.len = yyvsp[0].len;
 	}
-#line 1610 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1618 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
     break;
 
 
-#line 1614 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.c"
+#line 1622 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.c"
 
       default: break;
     }
@@ -1842,11 +1850,11 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 171 "/home/enorkin/stuff/kos/php-src/sapi/phpdbg/phpdbg_parser.y"
+#line 172 "/home/enorkin/kos/tmp/php-src/sapi/phpdbg/phpdbg_parser.y"
 
 
 static int yyerror(const char *msg) {
-	phpdbg_error("command", "type=\"parseerror\" msg=\"%s\"", "Parse Error: %s", msg);
+	phpdbg_error("Parse Error: %s", msg);
 
 	{
 		const phpdbg_param_t *top = PHPDBG_G(parser_stack);

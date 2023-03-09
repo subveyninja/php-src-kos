@@ -1,8 +1,9 @@
 --TEST--
 Bug #28721 (appendChild() and insertBefore() unset DOMText)
+--EXTENSIONS--
+dom
 --SKIPIF--
 <?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
-<?php require_once('skipif.inc'); ?>
 --FILE--
 <?php
 function print_node(DomNode $node) {

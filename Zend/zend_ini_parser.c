@@ -72,7 +72,7 @@
 #define yynerrs         ini_nerrs
 
 /* First part of user prologue.  */
-#line 2 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 2 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
 
 /*
    +----------------------------------------------------------------------+
@@ -286,7 +286,7 @@ static ZEND_COLD void ini_error(const char *msg)
 /* }}} */
 
 /* {{{ zend_parse_ini_file() */
-ZEND_API zend_result zend_parse_ini_file(zend_file_handle *fh, zend_bool unbuffered_errors, int scanner_mode, zend_ini_parser_cb_t ini_parser_cb, void *arg)
+ZEND_API zend_result zend_parse_ini_file(zend_file_handle *fh, bool unbuffered_errors, int scanner_mode, zend_ini_parser_cb_t ini_parser_cb, void *arg)
 {
 	int retval;
 	zend_ini_parser_param ini_parser_param;
@@ -301,7 +301,6 @@ ZEND_API zend_result zend_parse_ini_file(zend_file_handle *fh, zend_bool unbuffe
 
 	CG(ini_parser_unbuffered_errors) = unbuffered_errors;
 	retval = ini_parse();
-	zend_file_handle_dtor(fh);
 
 	shutdown_ini_scanner();
 
@@ -314,7 +313,7 @@ ZEND_API zend_result zend_parse_ini_file(zend_file_handle *fh, zend_bool unbuffe
 /* }}} */
 
 /* {{{ zend_parse_ini_string() */
-ZEND_API zend_result zend_parse_ini_string(char *str, zend_bool unbuffered_errors, int scanner_mode, zend_ini_parser_cb_t ini_parser_cb, void *arg)
+ZEND_API zend_result zend_parse_ini_string(char *str, bool unbuffered_errors, int scanner_mode, zend_ini_parser_cb_t ini_parser_cb, void *arg)
 {
 	int retval;
 	zend_ini_parser_param ini_parser_param;
@@ -344,13 +343,16 @@ ZEND_API zend_result zend_parse_ini_string(char *str, zend_bool unbuffered_error
 static void zval_ini_dtor(zval *zv)
 {
 	if (Z_TYPE_P(zv) == IS_STRING) {
+		if (ZEND_SYSTEM_INI) {
+			GC_MAKE_PERSISTENT_LOCAL(Z_STR_P(zv));
+		}
 		zend_string_release(Z_STR_P(zv));
 	}
 }
 /* }}} */
 
 
-#line 354 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 356 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -383,8 +385,8 @@ static void zval_ini_dtor(zval *zv)
 
 /* Use api.header.include to #include this header
    instead of duplicating it here.  */
-#ifndef YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
-# define YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
+#ifndef YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
+# define YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef INI_DEBUG
 # if defined YYDEBUG
@@ -436,7 +438,7 @@ typedef zval INI_STYPE;
 
 int ini_parse (void);
 
-#endif /* !YY_INI_HOME_USER_KASPERSKYOS_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED  */
+#endif /* !YY_INI_HOME_ENORKIN_KOS_TMP_PHP_SRC_ZEND_ZEND_INI_PARSER_H_INCLUDED  */
 
 
 
@@ -800,12 +802,12 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   311,   311,   312,   316,   323,   331,   340,   341,   345,
-     346,   350,   351,   352,   353,   354,   358,   359,   363,   364,
-     365,   369,   370,   371,   372,   373,   374,   378,   379,   380,
-     381,   382,   383,   387,   388,   389,   390,   391,   392,   393,
-     397,   401,   402,   403,   404,   405,   409,   410,   411,   412,
-     413
+       0,   313,   313,   314,   318,   325,   336,   345,   346,   350,
+     351,   355,   356,   357,   358,   359,   363,   364,   368,   369,
+     370,   374,   375,   376,   377,   378,   379,   383,   384,   385,
+     386,   387,   388,   392,   393,   394,   395,   396,   397,   398,
+     402,   406,   407,   408,   409,   410,   414,   415,   416,   417,
+     418
 };
 #endif
 
@@ -1399,129 +1401,129 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
   switch (yytype)
     {
     case 4: /* TC_RAW  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1405 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1407 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 5: /* TC_CONSTANT  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1411 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1413 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 6: /* TC_NUMBER  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1417 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1419 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 7: /* TC_STRING  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1423 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1425 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 8: /* TC_WHITESPACE  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1429 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1431 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 9: /* TC_LABEL  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1435 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1437 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 10: /* TC_OFFSET  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1441 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1443 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 12: /* TC_VARNAME  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1447 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1449 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 14: /* BOOL_TRUE  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1453 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1455 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 15: /* BOOL_FALSE  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1459 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1461 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 16: /* NULL_NULL  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1465 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1467 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 47: /* section_string_or_value  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1471 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1473 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 48: /* string_or_value  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1477 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1479 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 49: /* option_offset  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1483 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1485 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 50: /* encapsed_list  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1489 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1491 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 51: /* var_string_list_section  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1495 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1497 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 52: /* var_string_list  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1501 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1503 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 53: /* expr  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1507 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1509 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 54: /* cfg_var_ref  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1513 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1515 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 55: /* constant_literal  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1519 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1521 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
     case 56: /* constant_string  */
-#line 306 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 308 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
             { zval_ini_dtor(&(*yyvaluep)); }
-#line 1525 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1527 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
         break;
 
       default:
@@ -1792,8 +1794,14 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
+  case 3:
+#line 314 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
+                       { (void) ini_nerrs; }
+#line 1801 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
+    break;
+
   case 4:
-#line 316 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 318 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                        {
 #if DEBUG_CFG_PARSER
 			printf("SECTION: [%s]\n", Z_STRVAL(yyvsp[-1]));
@@ -1801,24 +1809,27 @@ yyreduce:
 			ZEND_INI_PARSER_CB(&yyvsp[-1], NULL, NULL, ZEND_INI_PARSER_SECTION, ZEND_INI_PARSER_ARG);
 			zend_string_release(Z_STR(yyvsp[-1]));
 		}
-#line 1805 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1813 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 5:
-#line 323 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 325 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                              {
 #if DEBUG_CFG_PARSER
 			printf("NORMAL: '%s' = '%s'\n", Z_STRVAL(yyvsp[-2]), Z_STRVAL(yyvsp[0]));
 #endif
 			ZEND_INI_PARSER_CB(&yyvsp[-2], &yyvsp[0], NULL, ZEND_INI_PARSER_ENTRY, ZEND_INI_PARSER_ARG);
+			if (ZEND_SYSTEM_INI) {
+				GC_MAKE_PERSISTENT_LOCAL(Z_STR(yyvsp[-2]));
+			}
 			zend_string_release(Z_STR(yyvsp[-2]));
 			zval_ini_dtor(&yyvsp[0]);
 		}
-#line 1818 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1829 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 6:
-#line 331 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 336 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 {
 #if DEBUG_CFG_PARSER
 			printf("OFFSET: '%s'[%s] = '%s'\n", Z_STRVAL(yyvsp[-4]), Z_STRVAL(yyvsp[-3]), Z_STRVAL(yyvsp[0]));
@@ -1828,269 +1839,269 @@ yyreduce:
 			zval_ini_dtor(&yyvsp[-3]);
 			zval_ini_dtor(&yyvsp[0]);
 		}
-#line 1832 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1843 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 7:
-#line 340 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 345 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                 { ZEND_INI_PARSER_CB(&yyvsp[0], NULL, NULL, ZEND_INI_PARSER_ENTRY, ZEND_INI_PARSER_ARG); zend_string_release(Z_STR(yyvsp[0])); }
-#line 1838 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1849 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 9:
-#line 345 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 350 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                         { yyval = yyvsp[0]; }
-#line 1844 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1855 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 10:
-#line 346 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 351 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_init_string(&yyval); }
-#line 1850 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1861 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 11:
-#line 350 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 355 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1856 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1867 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 12:
-#line 351 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 356 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1862 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1873 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 13:
-#line 352 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 357 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1868 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1879 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 14:
-#line 353 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 358 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1874 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1885 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 15:
-#line 354 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 359 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { zend_ini_init_string(&yyval); }
-#line 1880 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1891 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 16:
-#line 358 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 363 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; }
-#line 1886 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1897 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 17:
-#line 359 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 364 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_init_string(&yyval); }
-#line 1892 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1903 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 18:
-#line 363 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 368 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                         { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1898 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1909 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 19:
-#line 364 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 369 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                 { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1904 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1915 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 20:
-#line 365 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 370 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_init_string(&yyval); }
-#line 1910 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1921 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 21:
-#line 369 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 374 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1916 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1927 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 22:
-#line 370 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 375 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; }
-#line 1922 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1933 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 23:
-#line 371 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 376 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                         { yyval = yyvsp[-1]; }
-#line 1928 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1939 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 24:
-#line 372 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 377 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                         { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1934 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1945 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 25:
-#line 373 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 378 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1940 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1951 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 26:
-#line 374 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 379 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                { zend_ini_add_string(&yyval, &yyvsp[-3], &yyvsp[-1]); zend_string_free(Z_STR(yyvsp[-1])); }
-#line 1946 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1957 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 27:
-#line 378 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 383 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 1952 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1963 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 28:
-#line 379 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 384 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; }
-#line 1958 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1969 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 29:
-#line 380 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 385 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                         { yyval = yyvsp[-1]; }
-#line 1964 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1975 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 30:
-#line 381 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 386 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                 { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1970 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1981 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 31:
-#line 382 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 387 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                 { zend_ini_add_string(&yyval, &yyvsp[-1], &yyvsp[0]); zend_string_free(Z_STR(yyvsp[0])); }
-#line 1976 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1987 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 32:
-#line 383 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 388 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                        { zend_ini_add_string(&yyval, &yyvsp[-3], &yyvsp[-1]); zend_string_free(Z_STR(yyvsp[-1])); }
-#line 1982 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1993 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 33:
-#line 387 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 392 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; }
-#line 1988 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 1999 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 34:
-#line 388 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 393 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_do_op('|', &yyval, &yyvsp[-2], &yyvsp[0]); }
-#line 1994 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2005 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 35:
-#line 389 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 394 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_do_op('&', &yyval, &yyvsp[-2], &yyvsp[0]); }
-#line 2000 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2011 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 36:
-#line 390 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 395 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { zend_ini_do_op('^', &yyval, &yyvsp[-2], &yyvsp[0]); }
-#line 2006 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2017 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 37:
-#line 391 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 396 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { zend_ini_do_op('~', &yyval, &yyvsp[0], NULL); }
-#line 2012 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2023 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 38:
-#line 392 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 397 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { zend_ini_do_op('!', &yyval, &yyvsp[0], NULL); }
-#line 2018 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2029 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 39:
-#line 393 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 398 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[-1]; }
-#line 2024 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2035 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 40:
-#line 397 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 402 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                 { zend_ini_get_var(&yyval, &yyvsp[-1]); zend_string_free(Z_STR(yyvsp[-1])); }
-#line 2030 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2041 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 41:
-#line 401 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 406 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; }
-#line 2036 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2047 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 42:
-#line 402 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 407 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_RAW: '%s'\n", Z_STRVAL($1));*/ }
-#line 2042 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2053 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 43:
-#line 403 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 408 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_NUMBER: '%s'\n", Z_STRVAL($1));*/ }
-#line 2048 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2059 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 44:
-#line 404 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 409 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_STRING: '%s'\n", Z_STRVAL($1));*/ }
-#line 2054 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2065 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 45:
-#line 405 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 410 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; /*printf("TC_WHITESPACE: '%s'\n", Z_STRVAL($1));*/ }
-#line 2060 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2071 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 46:
-#line 409 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 414 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { zend_ini_get_constant(&yyval, &yyvsp[0]); }
-#line 2066 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2077 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 47:
-#line 410 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 415 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_RAW: '%s'\n", Z_STRVAL($1));*/ }
-#line 2072 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2083 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 48:
-#line 411 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 416 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_NUMBER: '%s'\n", Z_STRVAL($1));*/ }
-#line 2078 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2089 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 49:
-#line 412 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 417 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                         { yyval = yyvsp[0]; /*printf("TC_STRING: '%s'\n", Z_STRVAL($1));*/ }
-#line 2084 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2095 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
   case 50:
-#line 413 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.y"
+#line 418 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.y"
                                                                 { yyval = yyvsp[0]; /*printf("TC_WHITESPACE: '%s'\n", Z_STRVAL($1));*/ }
-#line 2090 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2101 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
     break;
 
 
-#line 2094 "/home/user/kasperskyos/php-src/Zend/zend_ini_parser.c"
+#line 2105 "/home/enorkin/kos/tmp/php-src/Zend/zend_ini_parser.c"
 
       default: break;
     }
