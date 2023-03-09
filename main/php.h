@@ -46,11 +46,6 @@
 #elif defined(__sun__)
 # define PHP_OS_FAMILY			"Solaris"
 #elif defined(__linux__)
-# ifdef KOS_TESTING
-#  define PHP_OS_FAMILY			"KOS"
-# else
-#  define PHP_OS_FAMILY			"Linux"
-# endif
 #elif defined(__KOS__)
 # define PHP_OS_FAMILY			"KOS"
 #else

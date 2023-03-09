@@ -3,9 +3,6 @@ cmake_minimum_required (VERSION 3.10)
 project(php LANGUAGES C CXX)
 set (CMAKE_C_STANDARD 11)
 
-# KOS_TESTING enables fork() and proc_exec()
-add_definitions(-DKOS_TESTING=1)
-
 if (KOS)
 	include (platform)
 
@@ -46,73 +43,6 @@ else ()
 	include_directories(/usr/include/libxml2)
 endif ()
 
-# @todo: add dependencies for test dirs
-get_directory_property(KOS_TESTING COMPILE_DEFINITIONS)
-if(KOS_TESTING MATCHES "KOS_TESTING")
-	set(TEST_DIRS
-			Zend
-			ext/ctype
-			ext/date
-			ext/dom
-			ext/fileinfo
-			# @todo: vfs segfault
-			# ext/filter
-			ext/hash
-			ext/iconv
-			ext/json
-			ext/libxml
-			# @todo: check it
-			# ext/opcache
-			ext/openssl
-			ext/pcre
-			ext/phar
-			ext/posix
-			ext/reflection
-			ext/session
-			ext/simplexml
-			# @todo: check it
-			# ext/sockets
-			ext/spl
-			ext/sqlite3
-			ext/standard/tests/array
-			ext/standard/tests/assert
-			ext/standard/tests/class_object
-			ext/standard/tests/crypt
-			ext/standard/tests/dir
-			ext/standard/tests/directory
-			ext/standard/tests/file
-			ext/standard/tests/filters
-			ext/standard/tests/hrtime
-			ext/standard/tests/image
-			ext/standard/tests/math
-			ext/standard/tests/network
-			ext/standard/tests/password
-			ext/standard/tests/random
-			ext/standard/tests/serialize
-			ext/standard/tests/streams
-			ext/standard/tests/strings
-			ext/standard/tests/time
-			ext/standard/tests/url
-			ext/standard/tests/versioning
-			ext/tokenizer
-			ext/xml
-			ext/xmlreader
-			ext/xmlwriter
-			tests
-			)
-
-	foreach(ITEM ${TEST_DIRS})
-		execute_process(COMMAND rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/resources/hdd/${ITEM})
-		execute_process(COMMAND sync)
-		execute_process(COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/copy_tests.py
-				-i ${PHP_SRC_ROOT}/${ITEM}
-				-o ${CMAKE_CURRENT_SOURCE_DIR}/resources/hdd/${ITEM})
-		execute_process(COMMAND sync)
-	endforeach()
-
-	execute_process(COMMAND sync)
-endif()
-
 option(KOS_HW "Build for KOS HW (default is FALSE)" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -132,14 +62,7 @@ set(PRODUCT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(libraries)
 add_subdirectory(client)
-
-get_directory_property(KOS_TESTING COMPILE_DEFINITIONS)
-
-if(KOS_TESTING MATCHES "KOS_TESTING")
-	message(STATUS "KOS_TESTING enables fork() and proc_exec()")
-	add_subdirectory(server)
-endif()
-
+add_subdirectory(server)
 if (KOS)
 	add_subdirectory(einit)
 endif()

@@ -50,12 +50,8 @@
 #include <strings.h>
 #include <pthread.h>
 
-#ifdef __KOS__
-# include <kos_net.h>
-# include <sys/mount.h>
-#endif
+#include "proc_open_kos.h"
 
-#include <kos.h>
 #include <fcntl.h>
 
 #include "zend.h"
@@ -1388,12 +1384,8 @@ out:
 	 * exiting.
 	 */
 	cleanup_ps_args(argv);
-#ifdef KOS_TESTING
-    int *ret = (int *)malloc(4);
-    memcpy(ret, &exit_status, 4);
-    return ret;
-#else
-	exit(exit_status);
-#endif
+  int *ret = (int *)malloc(4);
+  memcpy(ret, &exit_status, 4);
+  return ret;
 }
 /* }}} */

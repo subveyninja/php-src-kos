@@ -23,7 +23,6 @@ set(TARGET_SRC
         ${PHP_SRC_ROOT}/main/getopt.c
         ${PHP_SRC_ROOT}/main/php_syslog.c
         ${PHP_SRC_ROOT}/main/internal_functions_cli.c
-        ${PHP_SRC_ROOT}/main/kos.c
 )
 
 add_library(

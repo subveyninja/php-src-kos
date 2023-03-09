@@ -50,6 +50,7 @@ target_include_directories(
         ${TARGET_NAME}
         PRIVATE
         ${PHP_SRC_ROOT}/sapi/cli
+        ${PHP_SRC_ROOT}/ext/standard
 )
 
 target_compile_definitions(

@@ -48,6 +48,7 @@ target_include_directories(
         ${TARGET_NAME}
         PRIVATE
         ${PHP_SRC_ROOT}/sapi/cli
+        ${PHP_SRC_ROOT}/ext/standard
 )
 
 target_compile_definitions(
@@ -57,14 +58,28 @@ target_compile_definitions(
         ZEND_SIGNALS
 )
 
+set(TEST_RESOURCES "${PHP_SRC_ROOT}/kos/tests/resources/hdd/")
+
 if (KOS)
-    set(RESOURCE_ROOT "/")
+    set(TESTS_ROOT "/")
 else ()
-    set(RESOURCE_ROOT "${PHP_SRC_ROOT}/kos/tests/resources/hdd/")
+    set(TESTS_ROOT ${TEST_RESOURCES})
 endif ()
 
 target_compile_definitions(${TARGET_NAME} PRIVATE
-        TESTS_RUN_SCRIPT="${RESOURCE_ROOT}run-tests.php"
-        TESTS_PATH="${RESOURCE_ROOT}")
+    TESTS_RUN_SCRIPT="${TESTS_ROOT}/run-tests.php"
+    TESTS_PATH="${TESTS_ROOT}/tests/"
+)
+
+
+add_custom_target(copy_tests
+		COMMAND
+				python3 ${CMAKE_CURRENT_SOURCE_DIR}/copy_tests.py
+						-s ${PHP_SRC_ROOT}
+						-d ${TEST_RESOURCES}/tests/
+						-m ${CMAKE_CURRENT_SOURCE_DIR}/test_modules.txt
+)
+
+add_dependencies(${TARGET_NAME} copy_tests)
 
 install(TARGETS ${TARGET_NAME})

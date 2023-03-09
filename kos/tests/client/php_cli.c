@@ -49,14 +49,8 @@
 #include <locale.h>
 #include <strings.h>
 #include <pthread.h>
-#include <kos.h>
 
-#ifdef __KOS__
-#include <kos_net.h>
-#include <sys/mount.h>
-#include <kos.h>
-
-#endif
+#include "proc_open_kos.h"
 
 #include "zend.h"
 #include "zend_extensions.h"
@@ -1134,7 +1128,6 @@ err:
 }
 /* }}} */
 
-#ifdef KOS_TESTING
 char *g_argv[1024 * 32] = {0};
 int g_argc = 0;
 
@@ -1196,7 +1189,6 @@ static void list_files_recursively(char *basePath)
         exit(1);
     }
 }
-#endif
 
 /* {{{ main */
 #ifdef PHP_CLI_WIN32_NO_CONSOLE
@@ -1216,7 +1208,6 @@ int main(int argc, char *argv[])
 	BOOL using_wide_argv = 0;
 #endif
 
-#ifdef KOS_TESTING
     // Arguments changed to run the test script
     g_argv[g_argc++] = "./Cli";
     g_argv[g_argc++] = TESTS_RUN_SCRIPT;
@@ -1228,7 +1219,6 @@ int main(int argc, char *argv[])
         argv = g_argv;
         argc = g_argc;
     }
-#endif
 
 	int c;
 	int exit_status = SUCCESS;
@@ -1463,7 +1453,6 @@ out:
 	 */
 	cleanup_ps_args(argv);
 
-#ifdef KOS_TESTING
     int cli_sock = create_local_client_socket_and_connect(KOS_TESTING_PORT);
     if (0 > cli_sock) {
         fprintf(stderr, "%s(): Failed to creat client's socket: %s\n", __func__, strerror(errno));
@@ -1474,7 +1463,6 @@ out:
         }
         close(cli_sock);
     }
-#endif
 
 	exit(exit_status);
 }

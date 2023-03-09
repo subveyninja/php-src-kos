@@ -1,10 +1,9 @@
-#ifndef KOS_H
-#define KOS_H
+#ifndef PROC_OPEN_KOS_H
+#define PROC_OPEN_KOS_H
 
 #include <stdio.h>
 
 #define KOS_TESTING_BUF_SIZE 50 * 1024
-//#define KOS_TMP_DEBUG
 #define KOS_TESTING_PORT 8001
 
 typedef struct kos_args {
@@ -22,4 +21,4 @@ void free_kos_args(kos_args_t *data);
 int create_thread_and_join(kos_args_t *data, void *(*f)(void *args));
 int read_nonblocking_stdout(int fd, char *buf, int buf_len);
 
-#endif // KOS_H
+#endif // PROC_OPEN_KOS_H

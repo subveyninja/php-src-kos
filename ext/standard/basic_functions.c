@@ -385,6 +385,7 @@ PHP_MINIT_FUNCTION(basic) /* {{{ */
 #ifdef PHP_CAN_SUPPORT_PROC_OPEN
 	BASIC_MINIT_SUBMODULE(proc_open)
 #endif
+	BASIC_MINIT_SUBMODULE(kos_proc_open)
 	BASIC_MINIT_SUBMODULE(exec)
 
 	BASIC_MINIT_SUBMODULE(user_streams)

@@ -1778,11 +1778,24 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_proc_open, 0, 0, 3)
 ZEND_END_ARG_INFO()
 #endif
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kos_proc_open, 0, 0, 3)
+	ZEND_ARG_TYPE_MASK(0, command, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
+	ZEND_ARG_TYPE_INFO(0, descriptor_spec, IS_ARRAY, 0)
+	ZEND_ARG_INFO(1, pipes)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, cwd, IS_STRING, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, env_vars, IS_ARRAY, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
+ZEND_END_ARG_INFO()
+
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_proc_close, 0, 1, IS_LONG, 0)
 	ZEND_ARG_INFO(0, process)
 ZEND_END_ARG_INFO()
 #endif
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_kos_proc_close, 0, 1, IS_LONG, 0)
+	ZEND_ARG_INFO(0, process)
+ZEND_END_ARG_INFO()
 
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_proc_terminate, 0, 1, _IS_BOOL, 0)
@@ -1791,11 +1804,20 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_proc_terminate, 0, 1, _IS_BOOL, 
 ZEND_END_ARG_INFO()
 #endif
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_kos_proc_terminate, 0, 1, _IS_BOOL, 0)
+	ZEND_ARG_INFO(0, process)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, signal, IS_LONG, 0, "15")
+ZEND_END_ARG_INFO()
+
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_proc_get_status, 0, 1, IS_ARRAY, 0)
 	ZEND_ARG_INFO(0, process)
 ZEND_END_ARG_INFO()
 #endif
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_kos_proc_get_status, 0, 1, IS_ARRAY, 0)
+	ZEND_ARG_INFO(0, process)
+ZEND_END_ARG_INFO()
 
 #define arginfo_quoted_printable_decode arginfo_base64_encode
 
@@ -2702,15 +2724,19 @@ ZEND_FUNCTION(password_algos);
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_FUNCTION(proc_open);
 #endif
+ZEND_FUNCTION(kos_proc_open);
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_FUNCTION(proc_close);
 #endif
+ZEND_FUNCTION(kos_proc_close);
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_FUNCTION(proc_terminate);
 #endif
+ZEND_FUNCTION(kos_proc_terminate);
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 ZEND_FUNCTION(proc_get_status);
 #endif
+ZEND_FUNCTION(kos_proc_get_status);
 ZEND_FUNCTION(quoted_printable_decode);
 ZEND_FUNCTION(quoted_printable_encode);
 ZEND_FUNCTION(mt_srand);
@@ -3340,15 +3366,19 @@ static const zend_function_entry ext_functions[] = {
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 	ZEND_FE(proc_open, arginfo_proc_open)
 #endif
+	ZEND_FE(kos_proc_open, arginfo_kos_proc_open)
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 	ZEND_FE(proc_close, arginfo_proc_close)
 #endif
+	ZEND_FE(kos_proc_close, arginfo_kos_proc_close)
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 	ZEND_FE(proc_terminate, arginfo_proc_terminate)
 #endif
+	ZEND_FE(kos_proc_terminate, arginfo_kos_proc_terminate)
 #if defined(PHP_CAN_SUPPORT_PROC_OPEN)
 	ZEND_FE(proc_get_status, arginfo_proc_get_status)
 #endif
+	ZEND_FE(kos_proc_get_status, arginfo_kos_proc_get_status)
 	ZEND_FE(quoted_printable_decode, arginfo_quoted_printable_decode)
 	ZEND_FE(quoted_printable_encode, arginfo_quoted_printable_encode)
 	ZEND_FE(mt_srand, arginfo_mt_srand)

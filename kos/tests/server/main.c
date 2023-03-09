@@ -13,8 +13,9 @@
 # include <errno.h>
 #endif
 
+#include "proc_open_kos.h"
+
 #include <limits.h>
-#include <kos.h>
 #include <unistd.h>
 #include <zend_types.h>
 

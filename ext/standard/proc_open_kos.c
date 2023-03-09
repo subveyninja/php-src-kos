@@ -1,19 +1,3 @@
-/*
-   +----------------------------------------------------------------------+
-   | Copyright (c) The PHP Group                                          |
-   +----------------------------------------------------------------------+
-   | This source file is subject to version 3.01 of the PHP license,      |
-   | that is bundled with this package in the file LICENSE, and is        |
-   | available through the world-wide-web at the following url:           |
-   | http://www.php.net/license/3_01.txt                                  |
-   | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to          |
-   | license@php.net so we can mail you a copy immediately.               |
-   +----------------------------------------------------------------------+
-   | Author: Wez Furlong <wez@thebrainroom.com>                           |
-   +----------------------------------------------------------------------+
- */
-
 #include "php.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -27,103 +11,275 @@
 #include "SAPI.h"
 #include "main/php_network.h"
 #include "zend_smart_string.h"
+#include "proc_open_kos.h"
 
-#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
-#endif
-
-#if HAVE_FCNTL_H
 #include <fcntl.h>
+
+#include <sys/socket.h>
+
+#ifdef __KOS__
+#include <strict/posix/netinet/in.h>
+#include <strict/c/string.h>
+#include <strict/posix/unistd.h>
+#include <strict/posix/sys/stat.h>
+#include <strict/posix/fcntl.h>
+#include <strict/posix/pthread.h>
+#else
+#include <string.h>
+#include <malloc.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <pthread.h>
 #endif
 
-/* This symbol is defined in ext/standard/config.m4.
- * Essentially, it is set if you HAVE_FORK || PHP_WIN32
- * Other platforms may modify that configure check and add suitable #ifdefs
- * around the alternate code. */
-#ifdef PHP_CAN_SUPPORT_PROC_OPEN
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <sys/mount.h>
+#include <assert.h>
 
-#if HAVE_OPENPTY
-# if HAVE_PTY_H
-#  include <pty.h>
-# elif defined(__FreeBSD__)
-/* FreeBSD defines `openpty` in <libutil.h> */
-#  include <libutil.h>
-# elif defined(__NetBSD__) || defined(__DragonFly__)
-/* On recent NetBSD/DragonFlyBSD releases the emalloc, estrdup ... calls had been introduced in libutil */
-#  if defined(__NetBSD__)
-#    include <sys/termios.h>
-#  else
-#    include <termios.h>
-#  endif
-extern int openpty(int *, int *, char *, struct termios *, struct winsize *);
-# elif defined(__sun)
-#    include <termios.h>
-# else
-/* Mac OS X (and some BSDs) define `openpty` in <util.h> */
-#  include <util.h>
-# endif
-#elif defined(__sun)
-# include <fcntl.h>
-# include <stropts.h>
-# include <termios.h>
-# define HAVE_OPENPTY 1
+int create_local_server_nonblocking_socket(int port) {
+    struct sockaddr_in serv_sock_addr;
 
-/* Solaris before version 11.4 and Illumos do not have any openpty implementation */
-int openpty(int *master, int *slave, char *name, struct termios *termp, struct winsize *winp)
-{
-	int fd, sd;
-	const char *slaveid;
+    int server_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	assert(master);
-	assert(slave);
+    fcntl(server_sock, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 
-	sd = *master = *slave = -1;
-	fd = open("/dev/ptmx", O_NOCTTY|O_RDWR);
-	if (fd == -1) {
-		return -1;
-	}
-	/* Checking if we can have to the pseudo terminal */
-	if (grantpt(fd) != 0 || unlockpt(fd) != 0) {
-		goto fail;
-	}
-	slaveid = ptsname(fd);
-	if (!slaveid) {
-		goto fail;
-	}
+#ifndef __KOS__
+    int enable = 1;
+    if (setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        fprintf(stderr, "%s(): failed to set SO_REUSEADDR: %s\n", __func__, strerror(errno));
+    }
+#endif
 
-	/* Getting the slave path and pushing pseudo terminal */
-	sd = open(slaveid, O_NOCTTY|O_RDONLY);
-	if (sd == -1 || ioctl(sd, I_PUSH, "ptem") == -1) {
-		goto fail;
-	}
-	if (termp) {
-		if (tcgetattr(sd, termp) < 0) {
-			goto fail;
-		}
-	}
-	if (winp) {
-		if (ioctl(sd, TIOCSWINSZ, winp) == -1) {
-			goto fail;
-		}
-	}
+    if (-1 == server_sock) {
+        return -1;
+    }
 
-	*slave = sd;
-	*master = fd;
-	return 0;
-fail:
-	if (sd != -1) {
-		close(sd);
-	}
-	if (fd != -1) {
-		close(fd);
-	}
-	return -1;
+    memset(&serv_sock_addr, 0, sizeof(serv_sock_addr));
+
+    serv_sock_addr.sin_family = AF_INET;
+    serv_sock_addr.sin_port = htons(port);
+    serv_sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (-1 == bind(server_sock, (struct sockaddr *) &serv_sock_addr, sizeof(serv_sock_addr))) {
+        fprintf(stderr, "%s(): failed to bind socket: %s\n", __func__, strerror(errno));
+        close(server_sock);
+        return -1;
+    }
+
+    if (-1 == listen(server_sock, 10)) {
+        fprintf(stderr, "%s(): failed to listen socket: %s\n", __func__, strerror(errno));
+        close(server_sock);
+        return -1;
+    }
+
+    return server_sock;
 }
-#endif
 
-#include "proc_open.h"
+int create_local_client_socket_and_connect(int port) {
+    int client_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
+    if (-1 == client_sock) {
+        fprintf(stderr, "%s(): failed to create socket: %s\n", __func__, strerror(errno));
+        return -1;
+    }
+
+    struct sockaddr_in stSockAddr;
+    memset(&stSockAddr, 0, sizeof(stSockAddr));
+    stSockAddr.sin_family = AF_INET;
+    stSockAddr.sin_port = htons(port);
+
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    struct addrinfo *resultHints = NULL;
+    int res = getaddrinfo("127.0.0.1", NULL, &hints, &resultHints);
+    if (res != 0) {
+        fprintf(stderr, "%s(): failed to get addr info: %s\n", __func__, strerror(errno));
+        close(client_sock);
+        return -1;
+    }
+
+    struct sockaddr_in *in_addr = (struct sockaddr_in *) resultHints->ai_addr;
+    memcpy(&stSockAddr.sin_addr.s_addr, &in_addr->sin_addr.s_addr, sizeof(in_addr_t));
+    freeaddrinfo(resultHints);
+
+    res = -1;
+    for (int i = 0; res == -1 && i < 1000; i++) {
+        usleep(10000);
+        res = connect(client_sock, (struct sockaddr *) &stSockAddr, sizeof(stSockAddr));
+    }
+
+    if (res == -1) {
+        fprintf(stderr, "%s(): failed to connect: %s\n", __func__, strerror(errno));
+        close(client_sock);
+        return -1;
+    }
+
+    return client_sock;
+}
+
+int recv_while_eof(int sock, char *out_buf, int out_buf_len) {
+    int total_recv = 0;
+
+    while (1) {
+        char buff[KOS_TESTING_BUF_SIZE] = {0};
+
+        ssize_t read_res = recv(sock, buff, KOS_TESTING_BUF_SIZE - 1, 0);
+        out_buf_len -= (int)read_res;
+        total_recv += (int)read_res;
+
+        if (0 > out_buf_len) {
+            assert(0);
+        }
+
+        if (-1 == read_res) {
+            if (errno == EAGAIN) {
+                usleep(10);
+                continue;
+            }
+            fprintf(stderr, "%s(): failed to recv: %s\n", __func__, strerror(errno));
+            close(sock);
+            break;
+        } else if (0 == read_res) {
+            break;
+        } else {
+            sprintf(out_buf, "%s%s", out_buf, buff);
+            break;
+        }
+    }
+
+    return total_recv;
+}
+
+kos_args_t *split(char *str) {
+    const char* argv[1024];
+    int argc = 0;
+    int space = 1;
+    int quote = 0;
+    char* dst = str;
+
+    for (const char* src = str; *src; ++src)
+    {
+        if (space > 0 && *src == ' ')
+        {
+            continue;
+        }
+        if (space > 0)
+        {
+            space = 0;
+            argv[argc++] = dst;
+        }
+        if (*src == '"')
+        {
+            quote = quote == 1 ? 0 : 1;
+            continue;
+        }
+        if (*src == ' ' && quote == 0)
+        {
+            *dst++ = 0;
+            space = 1;
+        }
+        else
+        {
+            *dst++ = *src;
+        }
+    }
+    *dst = 0;
+
+    kos_args_t *ret = (kos_args_t *)malloc(sizeof(kos_args_t));
+    ret->argv = (char **)malloc(sizeof(char *) * (argc + 1));
+    ret->argc = 0;
+
+    for (int i = 0; i < argc; ++i) {
+        if (strstr("2>&1", argv[i])) {
+            continue;
+        }
+        ret->argv[ret->argc] = strdup(argv[i]);
+        ++ret->argc;
+    }
+
+    ret->argv[ret->argc] = NULL;
+
+    return ret;
+}
+
+void free_kos_args(kos_args_t *data) {
+    for (int i = 0; i < data->argc; ++i) {
+        free(data->argv[i]);
+    }
+    free(data);
+}
+
+int create_thread_and_join(kos_args_t *data, void *(*f)(void *args)) {
+    pthread_t thread;
+    int status;
+    int *status_addr;
+
+    status = pthread_create(&thread, NULL, f, (void *)data);
+    if (status != 0) {
+        fprintf(stderr, "Can't create thread, status = %d\n", status);
+        return -1;
+    }
+
+    status = pthread_join(thread, (void**)&status_addr);
+    if (status != 0) {
+        fprintf(stderr, "Can't join thread, status = %d\n", status);
+        return -1;
+    }
+
+    int ret = *status_addr;
+    free(status_addr);
+
+    return ret;
+}
+
+int read_nonblocking_stdout(int fd, char *buf, int buf_len) {
+    fflush(stdout);
+
+    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+    int res_read_stdout = (int)read(fd, buf, buf_len);
+    if (0 > res_read_stdout && errno != EAGAIN) {
+        fprintf(stderr, "Can't read from pipe stdout_fd\n");
+        return -1;
+    }
+
+    if (errno == EAGAIN) {
+        return 0;
+    }
+
+    return res_read_stdout;
+}
+
+static int g_last_proc_exit_status;
+static int g_last_cli_socket;
 static int le_proc_open; /* Resource number for `proc` resources */
+
+typedef int php_file_descriptor_t;
+typedef pid_t php_process_id_t;
+# define PHP_INVALID_FD (-1)
+
+/* Environment block under Win32 is a NUL terminated sequence of NUL terminated
+ *   name=value strings.
+ * Under Unix, it is an argv style array. */
+typedef struct _php_process_env {
+	char *envp;
+	char **envarray;
+} php_process_env;
+
+typedef struct _php_process_handle {
+	php_process_id_t	child;
+	int npipes;
+	zend_resource **pipes;
+	char *command;
+	php_process_env env;
+} php_process_handle;
 
 /* {{{ _php_array_to_envp
  * Process the `environment` argument to `proc_open`
@@ -134,9 +290,7 @@ static php_process_env _php_array_to_envp(zval *environment)
 	zval *element;
 	php_process_env env;
 	zend_string *key, *str;
-#ifndef PHP_WIN32
 	char **ep;
-#endif
 	char *p;
 	size_t sizeenv = 0;
 	HashTable *env_hash; /* temporary PHP array used as helper */
@@ -150,9 +304,7 @@ static php_process_env _php_array_to_envp(zval *environment)
 	uint32_t cnt = zend_hash_num_elements(Z_ARRVAL_P(environment));
 
 	if (cnt < 1) {
-#ifndef PHP_WIN32
 		env.envarray = (char **) ecalloc(1, sizeof(char *));
-#endif
 		env.envp = (char *) ecalloc(4, 1);
 		return env;
 	}
@@ -179,16 +331,12 @@ static php_process_env _php_array_to_envp(zval *environment)
 		}
 	} ZEND_HASH_FOREACH_END();
 
-#ifndef PHP_WIN32
 	ep = env.envarray = (char **) ecalloc(cnt + 1, sizeof(char *));
-#endif
 	p = env.envp = (char *) ecalloc(sizeenv + 4, 1);
 
 	ZEND_HASH_FOREACH_STR_KEY_PTR(env_hash, key, str) {
-#ifndef PHP_WIN32
 		*ep = p;
 		++ep;
-#endif
 
 		if (key) {
 			memcpy(p, ZSTR_VAL(key), ZSTR_LEN(key));
@@ -215,11 +363,9 @@ static php_process_env _php_array_to_envp(zval *environment)
  * Free the structures allocated by `_php_array_to_envp` */
 static void _php_free_envp(php_process_env env)
 {
-#ifndef PHP_WIN32
 	if (env.envarray) {
 		efree(env.envarray);
 	}
-#endif
 	if (env.envp) {
 		efree(env.envp);
 	}
@@ -232,9 +378,7 @@ static void _php_free_envp(php_process_env env)
 static void proc_open_rsrc_dtor(zend_resource *rsrc)
 {
 	php_process_handle *proc = (php_process_handle*)rsrc->ptr;
-#ifdef PHP_WIN32
-	DWORD wstatus;
-#elif HAVE_SYS_WAIT_H
+#if HAVE_SYS_WAIT_H
 	int wstatus;
 	int waitpid_options = 0;
 	pid_t wait_pid;
@@ -249,23 +393,7 @@ static void proc_open_rsrc_dtor(zend_resource *rsrc)
 		}
 	}
 
-	/* `pclose_wait` tells us: Are we freeing this resource because `pclose` or `proc_close` were
-	 * called? If so, we need to wait until the child process exits, because its exit code is
-	 * needed as the return value of those functions.
-	 * But if we're freeing the resource because of GC, don't wait. */
-#ifdef PHP_WIN32
-	if (FG(pclose_wait)) {
-		WaitForSingleObject(proc->childHandle, INFINITE);
-	}
-	GetExitCodeProcess(proc->childHandle, &wstatus);
-	if (wstatus == STILL_ACTIVE) {
-		FG(pclose_ret) = -1;
-	} else {
-		FG(pclose_ret) = wstatus;
-	}
-	CloseHandle(proc->childHandle);
-
-#elif HAVE_SYS_WAIT_H
+#if HAVE_SYS_WAIT_H
 	if (!FG(pclose_wait)) {
 		waitpid_options = WNOHANG;
 	}
@@ -294,7 +422,7 @@ static void proc_open_rsrc_dtor(zend_resource *rsrc)
 /* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION(proc_open) */
-PHP_MINIT_FUNCTION(proc_open)
+PHP_MINIT_FUNCTION(kos_proc_open)
 {
 	le_proc_open = zend_register_list_destructors_ex(proc_open_rsrc_dtor, NULL, "process",
 		module_number);
@@ -303,33 +431,14 @@ PHP_MINIT_FUNCTION(proc_open)
 /* }}} */
 
 /* {{{ Kill a process opened by `proc_open` */
-PHP_FUNCTION(proc_terminate)
+PHP_FUNCTION(kos_proc_terminate)
 {
-	zval *zproc;
-	php_process_handle *proc;
-	zend_long sig_no = SIGTERM;
-
-	ZEND_PARSE_PARAMETERS_START(1, 2)
-		Z_PARAM_RESOURCE(zproc)
-		Z_PARAM_OPTIONAL
-		Z_PARAM_LONG(sig_no)
-	ZEND_PARSE_PARAMETERS_END();
-
-	proc = (php_process_handle*)zend_fetch_resource(Z_RES_P(zproc), "process", le_proc_open);
-	if (proc == NULL) {
-		RETURN_THROWS();
-	}
-
-#ifdef PHP_WIN32
-	RETURN_BOOL(TerminateProcess(proc->childHandle, 255));
-#else
-	RETURN_BOOL(kill(proc->child, sig_no) == 0);
-#endif
+	RETURN_BOOL(true);
 }
 /* }}} */
 
 /* {{{ Close a process opened by `proc_open` */
-PHP_FUNCTION(proc_close)
+PHP_FUNCTION(kos_proc_close)
 {
 	zval *zproc;
 	php_process_handle *proc;
@@ -351,16 +460,12 @@ PHP_FUNCTION(proc_close)
 /* }}} */
 
 /* {{{ Get information about a process opened by `proc_open` */
-PHP_FUNCTION(proc_get_status)
+PHP_FUNCTION(kos_proc_get_status)
 {
 	zval *zproc;
 	php_process_handle *proc;
-#ifdef PHP_WIN32
-	DWORD wstatus;
-#elif HAVE_SYS_WAIT_H
 	int wstatus;
 	pid_t wait_pid;
-#endif
 	int running = 1, signaled = 0, stopped = 0;
 	int exitcode = -1, termsig = 0, stopsig = 0;
 
@@ -377,13 +482,16 @@ PHP_FUNCTION(proc_get_status)
 	add_assoc_string(return_value, "command", proc->command);
 	add_assoc_long(return_value, "pid", (zend_long)proc->child);
 
-#ifdef PHP_WIN32
-	GetExitCodeProcess(proc->childHandle, &wstatus);
-	running = wstatus == STILL_ACTIVE;
-	exitcode = running ? -1 : wstatus;
+    // @todo: TMP
+    // wait_pid = waitpid(proc->child, &wstatus, WNOHANG|WUNTRACED);
+    // fprintf(stderr, "Our status: %d, wait_pid status: %d\n", g_last_proc_exit_status, wait_pid);
+    wstatus = g_last_proc_exit_status;
 
-#elif HAVE_SYS_WAIT_H
-	wait_pid = waitpid(proc->child, &wstatus, WNOHANG|WUNTRACED);
+    // @todo: rework
+    close(g_last_cli_socket);
+    for (int i = 10; i < 20; ++i) {
+        close(i);
+    }
 
 	if (wait_pid == proc->child) {
 		if (WIFEXITED(wstatus)) {
@@ -395,18 +503,11 @@ PHP_FUNCTION(proc_get_status)
 			signaled = 1;
 			termsig = WTERMSIG(wstatus);
 		}
-#ifndef __KOS__
-		if (WIFSTOPPED(wstatus)) {
-			stopped = 1;
-			stopsig = WSTOPSIG(wstatus);
-		}
-#endif
 	} else if (wait_pid == -1) {
 		/* The only error which could occur here is ECHILD, which means that the PID we were
 		 * looking for either does not exist or is not a child of this process */
 		running = 0;
 	}
-#endif
 
 	add_assoc_bool(return_value, "running", running);
 	add_assoc_bool(return_value, "signaled", signaled);
@@ -417,40 +518,7 @@ PHP_FUNCTION(proc_get_status)
 }
 /* }}} */
 
-#ifdef PHP_WIN32
-
-/* We use this to allow child processes to inherit handles
- * One static instance can be shared and used for all calls to `proc_open`, since the values are
- * never changed */
-SECURITY_ATTRIBUTES php_proc_open_security = {
-	.nLength = sizeof(SECURITY_ATTRIBUTES),
-	.lpSecurityDescriptor = NULL,
-	.bInheritHandle = TRUE
-};
-
-# define pipe(pair)		(CreatePipe(&pair[0], &pair[1], &php_proc_open_security, 0) ? 0 : -1)
-
-# define COMSPEC_NT	"cmd.exe"
-
-static inline HANDLE dup_handle(HANDLE src, BOOL inherit, BOOL closeorig)
-{
-	HANDLE copy, self = GetCurrentProcess();
-
-	if (!DuplicateHandle(self, src, self, &copy, 0, inherit, DUPLICATE_SAME_ACCESS |
-				(closeorig ? DUPLICATE_CLOSE_SOURCE : 0)))
-		return NULL;
-	return copy;
-}
-
-static inline HANDLE dup_fd_as_handle(int fd)
-{
-	return dup_handle((HANDLE)_get_osfhandle(fd), TRUE, FALSE);
-}
-
-# define close_descriptor(fd)	CloseHandle(fd)
-#else /* !PHP_WIN32 */
 # define close_descriptor(fd)	close(fd)
-#endif
 
 /* Determines the type of a descriptor item. */
 typedef enum _descriptor_type {
@@ -485,132 +553,6 @@ static zend_string *get_valid_arg_string(zval *zv, int elem_num) {
 
 	return str;
 }
-
-#ifdef PHP_WIN32
-static void append_backslashes(smart_string *str, size_t num_bs)
-{
-	for (size_t i = 0; i < num_bs; i++) {
-		smart_string_appendc(str, '\\');
-	}
-}
-
-/* See https://docs.microsoft.com/en-us/cpp/cpp/parsing-cpp-command-line-arguments */
-static void append_win_escaped_arg(smart_string *str, char *arg)
-{
-	char c;
-	size_t num_bs = 0;
-	smart_string_appendc(str, '"');
-	while ((c = *arg)) {
-		if (c == '\\') {
-			num_bs++;
-		} else {
-			if (c == '"') {
-				/* Backslashes before " need to be doubled. */
-				num_bs = num_bs * 2 + 1;
-			}
-			append_backslashes(str, num_bs);
-			smart_string_appendc(str, c);
-			num_bs = 0;
-		}
-		arg++;
-	}
-	append_backslashes(str, num_bs * 2);
-	smart_string_appendc(str, '"');
-}
-
-static char *create_win_command_from_args(HashTable *args)
-{
-	smart_string str = {0};
-	zval *arg_zv;
-	zend_bool is_prog_name = 1;
-	int elem_num = 0;
-
-	ZEND_HASH_FOREACH_VAL(args, arg_zv) {
-		zend_string *arg_str = get_valid_arg_string(arg_zv, ++elem_num);
-		if (!arg_str) {
-			smart_string_free(&str);
-			return NULL;
-		}
-
-		if (!is_prog_name) {
-			smart_string_appendc(&str, ' ');
-		}
-
-		append_win_escaped_arg(&str, ZSTR_VAL(arg_str));
-
-		is_prog_name = 0;
-		zend_string_release(arg_str);
-	} ZEND_HASH_FOREACH_END();
-	smart_string_0(&str);
-	return str.c;
-}
-
-/* Get a boolean option from the `other_options` array which can be passed to `proc_open`.
- * (Currently, all options apply on Windows only.) */
-static int get_option(zval *other_options, char *opt_name)
-{
-	HashTable *opt_ary = Z_ARRVAL_P(other_options);
-	zval *item = zend_hash_str_find_deref(opt_ary, opt_name, strlen(opt_name));
-	return item != NULL &&
-		(Z_TYPE_P(item) == IS_TRUE ||
-		((Z_TYPE_P(item) == IS_LONG) && Z_LVAL_P(item)));
-}
-
-/* Initialize STARTUPINFOW struct, used on Windows when spawning a process.
- * Ref: https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfow */
-static void init_startup_info(STARTUPINFOW *si, descriptorspec_item *descriptors, int ndesc)
-{
-	memset(si, 0, sizeof(STARTUPINFOW));
-	si->cb = sizeof(STARTUPINFOW);
-	si->dwFlags = STARTF_USESTDHANDLES;
-
-	si->hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
-	si->hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	si->hStdError  = GetStdHandle(STD_ERROR_HANDLE);
-
-	/* redirect stdin/stdout/stderr if requested */
-	for (int i = 0; i < ndesc; i++) {
-		switch (descriptors[i].index) {
-			case 0:
-				si->hStdInput = descriptors[i].childend;
-				break;
-			case 1:
-				si->hStdOutput = descriptors[i].childend;
-				break;
-			case 2:
-				si->hStdError = descriptors[i].childend;
-				break;
-		}
-	}
-}
-
-static void init_process_info(PROCESS_INFORMATION *pi)
-{
-	memset(&pi, 0, sizeof(pi));
-}
-
-static int convert_command_to_use_shell(wchar_t **cmdw, size_t cmdw_len)
-{
-	size_t len = sizeof(COMSPEC_NT) + sizeof(" /s /c ") + cmdw_len + 3;
-	wchar_t *cmdw_shell = (wchar_t *)malloc(len * sizeof(wchar_t));
-
-	if (cmdw_shell == NULL) {
-		php_error_docref(NULL, E_WARNING, "Command conversion failed");
-		return FAILURE;
-	}
-
-	if (_snwprintf(cmdw_shell, len, L"%hs /s /c \"%s\"", COMSPEC_NT, *cmdw) == -1) {
-		free(cmdw_shell);
-		php_error_docref(NULL, E_WARNING, "Command conversion failed");
-		return FAILURE;
-	}
-
-	free(*cmdw);
-	*cmdw = cmdw_shell;
-
-	return SUCCESS;
-}
-#endif
 
 /* Convert command parameter array passed as first argument to `proc_open` into command string */
 static char* get_command_from_array(HashTable *array, char ***argv, int num_elems)
@@ -662,60 +604,27 @@ static zend_string* get_string_parameter(zval *array, int index, char *param_nam
 
 static int set_proc_descriptor_to_blackhole(descriptorspec_item *desc)
 {
-#ifdef PHP_WIN32
-	desc->childend = CreateFileA("nul", GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	if (desc->childend == NULL) {
-		php_error_docref(NULL, E_WARNING, "Failed to open nul");
-		return FAILURE;
-	}
-#else
 	desc->childend = open("/dev/null", O_RDWR);
 	if (desc->childend < 0) {
 		php_error_docref(NULL, E_WARNING, "Failed to open /dev/null: %s", strerror(errno));
 		return FAILURE;
 	}
-#endif
 	return SUCCESS;
 }
 
 static int set_proc_descriptor_to_pty(descriptorspec_item *desc, int *master_fd, int *slave_fd)
 {
-#if HAVE_OPENPTY
-	/* All FDs set to PTY in the child process will go to the slave end of the same PTY.
-	 * Likewise, all the corresponding entries in `$pipes` in the parent will all go to the master
-	 * end of the same PTY.
-	 * If this is the first descriptorspec set to 'pty', find an available PTY and get master and
-	 * slave FDs. */
-	if (*master_fd == -1) {
-		if (openpty(master_fd, slave_fd, NULL, NULL, NULL)) {
-			php_error_docref(NULL, E_WARNING, "Could not open PTY (pseudoterminal): %s", strerror(errno));
-			return FAILURE;
-		}
-	}
-
-	desc->type       = DESCRIPTOR_TYPE_PIPE;
-	desc->childend   = dup(*slave_fd);
-	desc->parentend  = dup(*master_fd);
-	desc->mode_flags = O_RDWR;
-	return SUCCESS;
-#else
 	php_error_docref(NULL, E_WARNING, "PTY (pseudoterminal) not supported on this system");
 	return FAILURE;
-#endif
 }
 
 /* Mark the descriptor close-on-exec, so it won't be inherited by children */
 static php_file_descriptor_t make_descriptor_cloexec(php_file_descriptor_t fd)
 {
-#ifdef PHP_WIN32
-	return dup_handle(fd, FALSE, TRUE);
-#else
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
 	return fd;
-#endif
 }
 
 static int set_proc_descriptor_to_pipe(descriptorspec_item *desc, zend_string *zmode)
@@ -741,19 +650,10 @@ static int set_proc_descriptor_to_pipe(descriptorspec_item *desc, zend_string *z
 
 	desc->parentend = make_descriptor_cloexec(desc->parentend);
 
-#ifdef PHP_WIN32
-	if (ZSTR_LEN(zmode) >= 2 && ZSTR_VAL(zmode)[1] == 'b')
-		desc->mode_flags |= O_BINARY;
-#endif
-
 	return SUCCESS;
 }
 
-#ifdef PHP_WIN32
-#define create_socketpair(socks) socketpair_win32(AF_INET, SOCK_STREAM, 0, (socks), 0)
-#else
 #define create_socketpair(socks) socketpair(AF_UNIX, SOCK_STREAM, 0, (socks))
-#endif
 
 static int set_proc_descriptor_to_socket(descriptorspec_item *desc)
 {
@@ -793,38 +693,20 @@ static int set_proc_descriptor_to_file(descriptorspec_item *desc, zend_string *f
 		return FAILURE;
 	}
 
-#ifdef PHP_WIN32
-	desc->childend = dup_fd_as_handle((int)fd);
-	_close((int)fd);
-
-	/* Simulate the append mode by fseeking to the end of the file
-	 * This introduces a potential race condition, but it is the best we can do */
-	if (strchr(ZSTR_VAL(file_mode), 'a')) {
-		SetFilePointer(desc->childend, 0, NULL, FILE_END);
-	}
-#else
 	desc->childend = fd;
-#endif
 	return SUCCESS;
 }
 
 static int dup_proc_descriptor(php_file_descriptor_t from, php_file_descriptor_t *to,
 	zend_ulong nindex)
 {
-#ifdef PHP_WIN32
-	*to = dup_handle(from, TRUE, FALSE);
-	if (*to == NULL) {
-		php_error_docref(NULL, E_WARNING, "Failed to dup() for descriptor " ZEND_LONG_FMT, nindex);
-		return FAILURE;
-	}
-#else
-	// *to = dup(from);
+	// disable creation new descriptor
+    // *to = dup(from);
 	if (*to < 0) {
 		php_error_docref(NULL, E_WARNING, "Failed to dup() for descriptor " ZEND_LONG_FMT ": %s",
 			nindex, strerror(errno));
 		return FAILURE;
 	}
-#endif
 	return SUCCESS;
 }
 
@@ -848,16 +730,7 @@ static int redirect_proc_descriptor(descriptorspec_item *desc, int target,
 
 		/* Support referring to a stdin/stdout/stderr pipe adopted from the parent,
 		 * which happens whenever an explicit override is not provided. */
-#ifndef PHP_WIN32
 		redirect_to = target;
-#else
-		switch (target) {
-			case 0: redirect_to = GetStdHandle(STD_INPUT_HANDLE); break;
-			case 1: redirect_to = GetStdHandle(STD_OUTPUT_HANDLE); break;
-			case 2: redirect_to = GetStdHandle(STD_ERROR_HANDLE); break;
-			EMPTY_SWITCH_DEFAULT_CASE()
-		}
-#endif
 	}
 
 	return dup_proc_descriptor(redirect_to, &desc->childend, nindex);
@@ -939,11 +812,7 @@ static int set_proc_descriptor_from_resource(zval *resource, descriptorspec_item
 		return FAILURE;
 	}
 
-#ifdef PHP_WIN32
-	php_file_descriptor_t fd_t = (php_file_descriptor_t)_get_osfhandle(fd);
-#else
 	php_file_descriptor_t fd_t = fd;
-#endif
 	if (dup_proc_descriptor(fd_t, &desc->childend, nindex) == FAILURE) {
 		return FAILURE;
 	}
@@ -951,7 +820,6 @@ static int set_proc_descriptor_from_resource(zval *resource, descriptorspec_item
 	return SUCCESS;
 }
 
-#ifndef PHP_WIN32
 static int close_parentends_of_pipes(descriptorspec_item *descriptors, int ndesc)
 {
 	/* We are running in child process
@@ -974,7 +842,6 @@ static int close_parentends_of_pipes(descriptorspec_item *descriptors, int ndesc
 
 	return SUCCESS;
 }
-#endif
 
 static void close_all_descriptors(descriptorspec_item *descriptors, int ndesc)
 {
@@ -998,7 +865,7 @@ static void efree_argv(char **argv)
 }
 
 /* {{{ Execute a command, with specified files used for input/output */
-PHP_FUNCTION(proc_open)
+PHP_FUNCTION(kos_proc_open)
 {
 	zend_string *command_str;
 	HashTable *command_ht;
@@ -1015,24 +882,7 @@ PHP_FUNCTION(proc_open)
 	zend_string *str_index;
 	zend_ulong nindex;
 	descriptorspec_item *descriptors = NULL;
-#ifdef PHP_WIN32
-	PROCESS_INFORMATION pi;
-	HANDLE childHandle;
-	STARTUPINFOW si;
-	BOOL newprocok;
-	DWORD dwCreateFlags = 0;
-	UINT old_error_mode;
-	char cur_cwd[MAXPATHLEN];
-	wchar_t *cmdw = NULL, *cwdw = NULL, *envpw = NULL;
-	size_t cmdw_len;
-	int suppress_errors = 0;
-	int bypass_shell = 0;
-	int blocking_pipes = 0;
-	int create_process_group = 0;
-	int create_new_console = 0;
-#else
 	char **argv = NULL;
-#endif
 	int pty_master_fd = -1, pty_slave_fd = -1;
 	php_process_id_t child;
 	php_process_handle *proc;
@@ -1056,33 +906,13 @@ PHP_FUNCTION(proc_open)
 			RETURN_THROWS();
 		}
 
-#ifdef PHP_WIN32
-		/* Automatically bypass shell if command is given as an array */
-		bypass_shell = 1;
-		command = create_win_command_from_args(command_ht);
-		if (!command) {
-			RETURN_FALSE;
-		}
-#else
 		command = get_command_from_array(command_ht, &argv, num_elems);
 		if (command == NULL) {
 			goto exit_fail;
 		}
-#endif
 	} else {
 		command = estrdup(ZSTR_VAL(command_str));
 	}
-
-#ifdef PHP_WIN32
-	if (other_options) {
-		suppress_errors      = get_option(other_options, "suppress_errors");
-		/* TODO: Deprecate in favor of array command? */
-		bypass_shell         = bypass_shell || get_option(other_options, "bypass_shell");
-		blocking_pipes       = get_option(other_options, "blocking_pipes");
-		create_process_group = get_option(other_options, "create_process_group");
-		create_new_console   = get_option(other_options, "create_new_console");
-	}
-#endif
 
 	if (environment) {
 		env = _php_array_to_envp(environment);
@@ -1115,121 +945,41 @@ PHP_FUNCTION(proc_open)
 		ndesc++;
 	} ZEND_HASH_FOREACH_END();
 
-#ifdef PHP_WIN32
-	if (cwd == NULL) {
-		char *getcwd_result = VCWD_GETCWD(cur_cwd, MAXPATHLEN);
-		if (!getcwd_result) {
-			php_error_docref(NULL, E_WARNING, "Cannot get current directory");
-			goto exit_fail;
-		}
-		cwd = cur_cwd;
-	}
-	cwdw = php_win32_cp_any_to_w(cwd);
-	if (!cwdw) {
-		php_error_docref(NULL, E_WARNING, "CWD conversion failed");
-		goto exit_fail;
-	}
+    // Let's find real command, not `unset` or something else
+    char *real_command = NULL;
+    char *skip_unset = strstr(command, "Cli_that_not_exist");
+    if (skip_unset) {
+        real_command = strdup(skip_unset);
+    }
 
-	init_startup_info(&si, descriptors, ndesc);
-	init_process_info(&pi);
+    if (NULL == real_command) {
+        fprintf(stderr, "FATAL ERROR! Real command not found\n");
+        goto exit_fail;
+    }
 
-	if (suppress_errors) {
-		old_error_mode = SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
-	}
+    int cli_sock = create_local_client_socket_and_connect(KOS_TESTING_PORT);
+    if (0 > cli_sock) {
+        fprintf(stderr, "%s(): Failed to creat client's socket: %s\n", __func__, strerror(errno));
+        goto next_step;
+    } else {
+        size_t send_res = send(cli_sock, real_command, strlen(real_command), 0);
+        if (0 > send_res) {
+            fprintf(stderr, "%s(): Failed to send data: %s\n", __func__, strerror(errno));
+            goto next_step;
+        }
+        char buf_status_code[3] = {0};
+        int recv_res = recv(cli_sock, buf_status_code, sizeof(buf_status_code), 0);
+        if (0 > recv_res) {
+            fprintf(stderr, "%s(): Failed to recv data: %s\n", __func__, strerror(errno));
+            goto next_step;
+        }
+        g_last_proc_exit_status = atoi(buf_status_code);
+        g_last_cli_socket = cli_sock;
+    }
 
-	dwCreateFlags = NORMAL_PRIORITY_CLASS;
-	if(strcmp(sapi_module.name, "cli") != 0) {
-		dwCreateFlags |= CREATE_NO_WINDOW;
-	}
-	if (create_process_group) {
-		dwCreateFlags |= CREATE_NEW_PROCESS_GROUP;
-	}
-	if (create_new_console) {
-		dwCreateFlags |= CREATE_NEW_CONSOLE;
-	}
-	envpw = php_win32_cp_env_any_to_w(env.envp);
-	if (envpw) {
-		dwCreateFlags |= CREATE_UNICODE_ENVIRONMENT;
-	} else  {
-		if (env.envp) {
-			php_error_docref(NULL, E_WARNING, "ENV conversion failed");
-			goto exit_fail;
-		}
-	}
+next_step:
 
-	cmdw = php_win32_cp_conv_any_to_w(command, strlen(command), &cmdw_len);
-	if (!cmdw) {
-		php_error_docref(NULL, E_WARNING, "Command conversion failed");
-		goto exit_fail;
-	}
-
-	if (!bypass_shell) {
-		if (convert_command_to_use_shell(&cmdw, cmdw_len) == FAILURE) {
-			goto exit_fail;
-		}
-	}
-	newprocok = CreateProcessW(NULL, cmdw, &php_proc_open_security,
-		&php_proc_open_security, TRUE, dwCreateFlags, envpw, cwdw, &si, &pi);
-
-	if (suppress_errors) {
-		SetErrorMode(old_error_mode);
-	}
-
-	if (newprocok == FALSE) {
-		DWORD dw = GetLastError();
-		close_all_descriptors(descriptors, ndesc);
-		php_error_docref(NULL, E_WARNING, "CreateProcess failed, error code: %u", dw);
-		goto exit_fail;
-	}
-
-	childHandle = pi.hProcess;
-	child       = pi.dwProcessId;
-	CloseHandle(pi.hThread);
-#elif HAVE_FORK
-	/* the Unix way */
-	child = fork();
-
-	if (child == 0) {
-		/* This is the child process */
-
-		if (close_parentends_of_pipes(descriptors, ndesc) == FAILURE) {
-			/* We are already in child process and can't do anything to make
-			 * `proc_open` return an error in the parent
-			 * All we can do is exit with a non-zero (error) exit code */
-			_exit(127);
-		}
-
-		if (cwd) {
-			php_ignore_value(chdir(cwd));
-		}
-
-		if (argv) {
-			/* execvpe() is non-portable, use environ instead. */
-			if (env.envarray) {
-				environ = env.envarray;
-			}
-			execvp(command, argv);
-		} else {
-			if (env.envarray) {
-				execle("/bin/sh", "sh", "-c", command, NULL, env.envarray);
-			} else {
-				execl("/bin/sh", "sh", "-c", command, NULL);
-			}
-		}
-
-		/* If execvp/execle/execl are successful, we will never reach here
-		 * Display error and exit with non-zero (error) status code */
-		php_error_docref(NULL, E_WARNING, "Exec failed: %s", strerror(errno));
-		_exit(127);
-	} else if (child < 0) {
-		/* Failed to fork() */
-		close_all_descriptors(descriptors, ndesc);
-		php_error_docref(NULL, E_WARNING, "Fork failed: %s", strerror(errno));
-		goto exit_fail;
-	}
-#else
-# error You lose (configure should not have let you get here)
-#endif
+    free(real_command);
 
 	/* We forked/spawned and this is the parent */
 
@@ -1243,9 +993,6 @@ PHP_FUNCTION(proc_open)
 	proc->pipes = emalloc(sizeof(zend_resource *) * ndesc);
 	proc->npipes = ndesc;
 	proc->child = child;
-#ifdef PHP_WIN32
-	proc->childHandle = childHandle;
-#endif
 	proc->env = env;
 
 	/* Clean up all the child ends and then open streams on the parent
@@ -1264,14 +1011,6 @@ PHP_FUNCTION(proc_open)
 			char *mode_string = NULL;
 
 			switch (descriptors[i].mode_flags) {
-#ifdef PHP_WIN32
-				case O_WRONLY|O_BINARY:
-					mode_string = "wb";
-					break;
-				case O_RDONLY|O_BINARY:
-					mode_string = "rb";
-					break;
-#endif
 				case O_WRONLY:
 					mode_string = "w";
 					break;
@@ -1283,15 +1022,20 @@ PHP_FUNCTION(proc_open)
 					break;
 			}
 
-#ifdef PHP_WIN32
-			stream = php_stream_fopen_from_fd(_open_osfhandle((zend_intptr_t)descriptors[i].parentend,
-						descriptors[i].mode_flags), mode_string, NULL);
-			php_stream_set_option(stream, PHP_STREAM_OPTION_PIPE_BLOCKING, blocking_pipes, NULL);
-#else
-			stream = php_stream_fopen_from_fd(descriptors[i].parentend, mode_string, NULL);
-#endif
+      if (i == STDOUT_FILENO) {
+          stream = php_stream_fopen_from_fd(cli_sock, mode_string, NULL);
+      } else {
+          stream = php_stream_fopen_from_fd(descriptors[i].parentend, mode_string, NULL);
+      }
+
 		} else if (descriptors[i].type == DESCRIPTOR_TYPE_SOCKET) {
-			stream = php_stream_sock_open_from_socket((php_socket_t) descriptors[i].parentend, NULL);
+
+      if (i == STDOUT_FILENO) {
+          stream = php_stream_sock_open_from_socket((php_socket_t) cli_sock, NULL);
+      } else {
+          stream = php_stream_sock_open_from_socket((php_socket_t) descriptors[i].parentend, NULL);
+      }
+
 		} else {
 			proc->pipes[i] = NULL;
 		}
@@ -1321,13 +1065,7 @@ exit_fail:
 		RETVAL_FALSE;
 	}
 
-#ifdef PHP_WIN32
-	free(cwdw);
-	free(cmdw);
-	free(envpw);
-#else
 	efree_argv(argv);
-#endif
 #if HAVE_OPENPTY
 	if (pty_master_fd != -1) {
 		close(pty_master_fd);
@@ -1341,5 +1079,3 @@ exit_fail:
 	}
 }
 /* }}} */
-
-#endif /* PHP_CAN_SUPPORT_PROC_OPEN */

@@ -65,6 +65,7 @@ set(TARGET_SRC2
         ${PHP_SRC_ROOT}/ext/standard/uuencode.c
         ${PHP_SRC_ROOT}/ext/standard/filters.c
         ${PHP_SRC_ROOT}/ext/standard/proc_open.c
+        ${PHP_SRC_ROOT}/ext/standard/proc_open_kos.c
         ${PHP_SRC_ROOT}/ext/standard/streamsfuncs.c
         ${PHP_SRC_ROOT}/ext/standard/http.c
         ${PHP_SRC_ROOT}/ext/standard/password.c
@@ -75,7 +76,6 @@ set(TARGET_SRC2
         ${PHP_SRC_ROOT}/ext/standard/basic_functions.c
         ${PHP_SRC_ROOT}/ext/standard/url_scanner_ex.c
         ${PHP_SRC_ROOT}/ext/standard/var_unserializer.c
-        ${PHP_SRC_ROOT}/main/kos.c
 )
 
 add_library(

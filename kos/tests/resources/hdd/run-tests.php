@@ -1254,7 +1254,7 @@ function system_with_timeout(
     if ($captureStdErr) {
         $descriptorspec[2] = ['pipe', 'w'];
     }
-    $proc = proc_open($commandline, $descriptorspec, $pipes, TEST_PHP_SRCDIR, $bin_env, ['suppress_errors' => true]);
+    $proc = kos_proc_open($commandline, $descriptorspec, $pipes, TEST_PHP_SRCDIR, $bin_env, ['suppress_errors' => true]);
 
     if (!$proc) {
         return false;
@@ -1283,7 +1283,7 @@ function system_with_timeout(
         } elseif ($n === 0) {
             /* timed out */
             $data .= "\n ** ERROR: process timed out **\n";
-            proc_terminate($proc, 9);
+            kos_proc_terminate($proc, 9);
             return $data;
         } elseif ($n > 0) {
             if ($captureStdOut) {
@@ -1301,7 +1301,7 @@ function system_with_timeout(
         }
     }
 
-    $stat = proc_get_status($proc);
+    $stat = kos_proc_get_status($proc);
 
     if ($stat['signaled']) {
         $data .= "\nTermsig=" . $stat['stopsig'] . "\n";
@@ -1313,7 +1313,7 @@ function system_with_timeout(
         $data .= "\nTermsig=" . $stat["exitcode"] . "\n";
     }
 
-    proc_close($proc);
+    kos_proc_close($proc);
     return $data;
 }
 
@@ -1472,7 +1472,7 @@ function run_all_tests_parallel(array $test_files, array $env, $redir_tested): v
 
     $startTime = microtime(true);
     for ($i = 1; $i <= $workers; $i++) {
-        $proc = proc_open(
+        $proc = kos_proc_open(
             $thisPHP . ' ' . escapeshellarg($thisScript),
             [], // Inherit our stdin, stdout and stderr
             $pipes,
@@ -1635,7 +1635,7 @@ escape:
                                     "redir_tested" => $redir_tested
                                 ]);
                             } else {
-                                proc_terminate($workerProcs[$i]);
+                                kos_proc_terminate($workerProcs[$i]);
                                 unset($workerProcs[$i]);
                                 unset($workerSocks[$i]);
                                 goto escape;
@@ -1726,7 +1726,7 @@ function kill_children(array $children): void
 {
     foreach ($children as $child) {
         if ($child) {
-            proc_terminate($child);
+            kos_proc_terminate($child);
         }
     }
 }
@@ -3770,12 +3770,12 @@ function init_output_buffers(): void
 
 function check_proc_open_function_exists(): void
 {
-    if (!function_exists('proc_open')) {
+    if (!function_exists('kos_proc_open')) {
         echo <<<NO_PROC_OPEN_ERROR
 
 +-----------------------------------------------------------+
 |                       ! ERROR !                           |
-| The test-suite requires that proc_open() is available.    |
+| The test-suite requires that kos_proc_open() is available.    |
 | Please check if you disabled it in php.ini.               |
 +-----------------------------------------------------------+
 
