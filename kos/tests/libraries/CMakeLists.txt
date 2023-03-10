@@ -4,44 +4,46 @@ add_subdirectory(main)
 add_subdirectory(Zend)
 
 set(PHP_EXT_MODULES
-        ext_xmlwriter_t
-        ext_xmlreader_t
-        ext_xml_t
-        ext_tokenizer_t
-        ext_spl_t
-        ext_simplexml_t
-        ext_session_t
-        ext_reflection_t
-        ext_posix_t
-        ext_phar_t
-        ext_pdo_sqlite_t
-        ext_pdo_t
-        ext_json_t
-        ext_iconv_t
-        ext_hash_t
-        ext_filter_t
-        ext_fileinfo_t
-        ext_dom_t
-        ext_ctype_t
-        ext_sqlite3_t
-        ext_pcre_t
-        ext_openssl_t
-        ext_libxml_t
-        ext_date_t
-        ext_standard_t
-        main_t
-        main_streams_t
-        Zend_t
-        PARENT_SCOPE
+    main
+    main_streams
+    Zend
+    ext_xmlwriter
+    ext_xmlreader
+    ext_xml
+    ext_tokenizer
+    ext_spl
+    ext_simplexml
+    ext_session
+    ext_reflection
+    ext_posix
+    ext_phar
+    ext_pdo_sqlite
+    ext_pdo
+    ext_json
+    ext_iconv
+    ext_hash
+    ext_filter
+    ext_fileinfo
+    ext_dom
+    ext_ctype
+    ext_sqlite3
+    ext_pcre
+    ext_openssl
+    ext_libxml
+    ext_standard
+    ext_date
+    main_streams
+    main
+    PARENT_SCOPE
 )
 
 set(_THIRD_PARTY_LIBS
-        ssl
-        crypto
-        xml2
-        sqlite3
-        pthread
-        m
+    ssl
+    crypto
+    xml2
+    sqlite3
+    pthread
+    m
 )
 if (NOT KOS)
     list(APPEND _THIRD_PARTY_LIBS dl)
