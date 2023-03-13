@@ -104,6 +104,20 @@ PHPAPI void php_register_variable_ex(const char *var_name, zval *val, zval *trac
 	}
 	var_len = p - var;
 
+	/* Discard variable if mangling made it start with __Host-, where pre-mangling it did not start with __Host- */
+	if (strncmp(var, "__Host-", sizeof("__Host-")-1) == 0 && strncmp(var_name, "__Host-", sizeof("__Host-")-1) != 0) {
+		zval_ptr_dtor_nogc(val);
+		free_alloca(var_orig, use_heap);
+		return;
+	}
+
+	/* Discard variable if mangling made it start with __Secure-, where pre-mangling it did not start with __Secure- */
+	if (strncmp(var, "__Secure-", sizeof("__Secure-")-1) == 0 && strncmp(var_name, "__Secure-", sizeof("__Secure-")-1) != 0) {
+		zval_ptr_dtor_nogc(val);
+		free_alloca(var_orig, use_heap);
+		return;
+	}
+
 	if (var_len==0) { /* empty variable name, or variable name with a space in it */
 		zval_ptr_dtor_nogc(val);
 		free_alloca(var_orig, use_heap);
@@ -571,11 +585,15 @@ void _php_import_environment_variables(zval *array_ptr)
 		import_environment_variable(Z_ARRVAL_P(array_ptr), *env);
 	}
 #else
-	char *environment = GetEnvironmentStringsA();
-	for (char *env = environment; env != NULL && *env; env += strlen(env) + 1) {
-		import_environment_variable(Z_ARRVAL_P(array_ptr), env);
+	wchar_t *environmentw = GetEnvironmentStringsW();
+	for (wchar_t *envw = environmentw; envw != NULL && *envw; envw += wcslen(envw) + 1) {
+		char *env = php_win32_cp_w_to_any(envw);
+		if (env != NULL) {
+			import_environment_variable(Z_ARRVAL_P(array_ptr), env);
+			free(env);
+		}
 	}
-	FreeEnvironmentStringsA(environment);
+	FreeEnvironmentStringsW(environmentw);
 #endif
 
 	tsrm_env_unlock();

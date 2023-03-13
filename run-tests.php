@@ -97,12 +97,12 @@ Options:
                 Do not delete 'all' files, 'php' test file, 'skip' or 'clean'
                 file.
 
-    --set-timeout [n]
-                Set timeout for individual tests, where [n] is the number of
+    --set-timeout <n>
+                Set timeout for individual tests, where <n> is the number of
                 seconds. The default value is 60 seconds, or 300 seconds when
                 testing for memory leaks.
 
-    --context [n]
+    --context <n>
                 Sets the number of lines of surrounding context to print for diffs.
                 The default value is 3.
 
@@ -113,8 +113,8 @@ Options:
                 'mem'. The result types get written independent of the log format,
                 however 'diff' only exists when a test fails.
 
-    --show-slow [n]
-                Show all tests that took longer than [n] milliseconds to run.
+    --show-slow <n>
+                Show all tests that took longer than <n> milliseconds to run.
 
     --no-clean  Do not execute clean section if any.
 
@@ -571,7 +571,11 @@ function main(): void
                     $just_save_results = true;
                     break;
                 case '--set-timeout':
-                    $environment['TEST_TIMEOUT'] = $argv[++$i];
+                    $timeout = $argv[++$i] ?? '';
+                    if (!preg_match('/^\d+$/', $timeout)) {
+                        error("'$timeout' is not a valid number of seconds, try e.g. --set-timeout 60 for 1 minute");
+                    }
+                    $environment['TEST_TIMEOUT'] = intval($timeout, 10);
                     break;
                 case '--context':
                     $context_line_count = $argv[++$i] ?? '';
@@ -586,7 +590,11 @@ function main(): void
                     }
                     break;
                 case '--show-slow':
-                    $slow_min_ms = $argv[++$i];
+                    $slow_min_ms = $argv[++$i] ?? '';
+                    if (!preg_match('/^\d+$/', $slow_min_ms)) {
+                        error("'$slow_min_ms' is not a valid number of milliseconds, try e.g. --show-slow 1000 for 1 second");
+                    }
+                    $slow_min_ms = intval($slow_min_ms, 10);
                     break;
                 case '--temp-source':
                     $temp_source = $argv[++$i];
@@ -617,7 +625,7 @@ function main(): void
                         $environment['SKIP_MSAN'] = 1;
                     }
 
-                    $lsanSuppressions = __DIR__ . '/azure/lsan-suppressions.txt';
+                    $lsanSuppressions = __DIR__ . '/.github/lsan-suppressions.txt';
                     if (file_exists($lsanSuppressions)) {
                         $environment['LSAN_OPTIONS'] = 'suppressions=' . $lsanSuppressions
                             . ':print_suppressions=0';
@@ -3478,7 +3486,7 @@ function junit_mark_test_as(
     $type,
     string $file_name,
     string $test_name,
-    ?int $time = null,
+    ?float $time = null,
     string $message = '',
     string $details = ''
 ): void {
@@ -3533,7 +3541,7 @@ function junit_mark_test_as(
     $JUNIT['files'][$file_name]['xml'] .= "</testcase>\n";
 }
 
-function junit_suite_record(string $suite, string $param, int $value = 1): void
+function junit_suite_record(string $suite, string $param, float $value = 1): void
 {
     global $JUNIT;
 
@@ -3541,7 +3549,7 @@ function junit_suite_record(string $suite, string $param, int $value = 1): void
     $JUNIT['suites'][$suite][$param] += $value;
 }
 
-function junit_get_timer(string $file_name): int
+function junit_get_timer(string $file_name): float
 {
     global $JUNIT;
     if (!junit_enabled()) {

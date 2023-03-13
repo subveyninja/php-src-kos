@@ -18,6 +18,7 @@
 #include "fpm_worker_pool.h"
 #include "fpm_scoreboard.h"
 #include "fpm_sockets.h"
+#include "fpm_stdio.h"
 #include "zlog.h"
 
 
@@ -63,7 +64,7 @@ static int fpm_pctl_timeout_set(int sec) /* {{{ */
 }
 /* }}} */
 
-static void fpm_pctl_exit() /* {{{ */
+static void fpm_pctl_exit(void)
 {
 	zlog(ZLOG_NOTICE, "exiting, bye-bye!");
 
@@ -71,11 +72,10 @@ static void fpm_pctl_exit() /* {{{ */
 	fpm_cleanups_run(FPM_CLEANUP_PARENT_EXIT_MAIN);
 	exit(FPM_EXIT_OK);
 }
-/* }}} */
 
 #define optional_arg(c) (saved_argc > c ? ", \"" : ""), (saved_argc > c ? saved_argv[c] : ""), (saved_argc > c ? "\"" : "")
 
-static void fpm_pctl_exec() /* {{{ */
+static void fpm_pctl_exec(void)
 {
 	zlog(ZLOG_DEBUG, "Blocking some signals before reexec");
 	if (0 > fpm_signals_block()) {
@@ -100,13 +100,15 @@ static void fpm_pctl_exec() /* {{{ */
 	);
 
 	fpm_cleanups_run(FPM_CLEANUP_PARENT_EXEC);
+
+	fpm_stdio_restore_original_stderr(1);
+
 	execvp(saved_argv[0], saved_argv);
 	zlog(ZLOG_SYSERROR, "failed to reload: execvp() failed");
 	exit(FPM_EXIT_SOFTWARE);
 }
-/* }}} */
 
-static void fpm_pctl_action_last() /* {{{ */
+static void fpm_pctl_action_last(void)
 {
 	switch (fpm_state) {
 		case FPM_PCTL_STATE_RELOADING:
@@ -119,7 +121,6 @@ static void fpm_pctl_action_last() /* {{{ */
 			break;
 	}
 }
-/* }}} */
 
 int fpm_pctl_kill(pid_t pid, int how) /* {{{ */
 {
@@ -137,6 +138,9 @@ int fpm_pctl_kill(pid_t pid, int how) /* {{{ */
 			break;
 		case FPM_PCTL_QUIT :
 			s = SIGQUIT;
+			break;
+		case FPM_PCTL_KILL:
+			s = SIGKILL;
 			break;
 		default :
 			break;
@@ -172,7 +176,7 @@ void fpm_pctl_kill_all(int signo) /* {{{ */
 }
 /* }}} */
 
-static void fpm_pctl_action_next() /* {{{ */
+static void fpm_pctl_action_next(void)
 {
 	int sig, timeout;
 
@@ -200,7 +204,6 @@ static void fpm_pctl_action_next() /* {{{ */
 	fpm_signal_sent = sig;
 	fpm_pctl_timeout_set(timeout);
 }
-/* }}} */
 
 void fpm_pctl(int new_state, int action) /* {{{ */
 {
@@ -244,13 +247,12 @@ void fpm_pctl(int new_state, int action) /* {{{ */
 }
 /* }}} */
 
-int fpm_pctl_can_spawn_children() /* {{{ */
+int fpm_pctl_can_spawn_children(void)
 {
 	return fpm_state == FPM_PCTL_STATE_NORMAL;
 }
-/* }}} */
 
-int fpm_pctl_child_exited() /* {{{ */
+int fpm_pctl_child_exited(void)
 {
 	if (fpm_state == FPM_PCTL_STATE_NORMAL) {
 		return 0;
@@ -261,9 +263,8 @@ int fpm_pctl_child_exited() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
-int fpm_pctl_init_main() /* {{{ */
+int fpm_pctl_init_main(void)
 {
 	int i;
 
@@ -289,7 +290,6 @@ int fpm_pctl_init_main() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
 static void fpm_pctl_check_request_timeout(struct timeval *now) /* {{{ */
 {
@@ -310,6 +310,17 @@ static void fpm_pctl_check_request_timeout(struct timeval *now) /* {{{ */
 }
 /* }}} */
 
+static void fpm_pctl_kill_idle_child(struct fpm_child_s *child) /* {{{ */
+{
+	if (child->idle_kill) {
+		fpm_pctl_kill(child->pid, FPM_PCTL_KILL);
+	} else {
+		child->idle_kill = 1;
+		fpm_pctl_kill(child->pid, FPM_PCTL_QUIT);
+	}
+}
+/* }}} */
+
 static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{ */
 {
 	struct fpm_worker_pool_s *wp;
@@ -323,21 +334,6 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 		unsigned cur_lq = 0;
 
 		if (wp->config == NULL) continue;
-
-		for (child = wp->children; child; child = child->next) {
-			if (fpm_request_is_idle(child)) {
-				if (last_idle_child == NULL) {
-					last_idle_child = child;
-				} else {
-					if (timercmp(&child->started, &last_idle_child->started, <)) {
-						last_idle_child = child;
-					}
-				}
-				idle++;
-			} else {
-				active++;
-			}
-		}
 
 		/* update status structure for all PMs */
 		if (wp->listen_address_domain == FPM_AF_INET) {
@@ -356,7 +352,25 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 #endif
 			}
 		}
-		fpm_scoreboard_update(idle, active, cur_lq, -1, -1, -1, 0, FPM_SCOREBOARD_ACTION_SET, wp->scoreboard);
+
+		fpm_scoreboard_update_begin(wp->scoreboard);
+
+		for (child = wp->children; child; child = child->next) {
+			if (fpm_request_is_idle(child)) {
+				if (last_idle_child == NULL) {
+					last_idle_child = child;
+				} else {
+					if (timercmp(&child->started, &last_idle_child->started, <)) {
+						last_idle_child = child;
+					}
+				}
+				idle++;
+			} else {
+				active++;
+			}
+		}
+
+		fpm_scoreboard_update_commit(idle, active, cur_lq, -1, -1, -1, 0, FPM_SCOREBOARD_ACTION_SET, wp->scoreboard);
 
 		/* this is specific to PM_STYLE_ONDEMAND */
 		if (wp->config->pm == PM_STYLE_ONDEMAND) {
@@ -369,8 +383,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 			fpm_request_last_activity(last_idle_child, &last);
 			fpm_clock_get(&now);
 			if (last.tv_sec < now.tv_sec - wp->config->pm_process_idle_timeout) {
-				last_idle_child->idle_kill = 1;
-				fpm_pctl_kill(last_idle_child->pid, FPM_PCTL_QUIT);
+				fpm_pctl_kill_idle_child(last_idle_child);
 			}
 
 			continue;
@@ -382,8 +395,7 @@ static void fpm_pctl_perform_idle_server_maintenance(struct timeval *now) /* {{{
 		zlog(ZLOG_DEBUG, "[pool %s] currently %d active children, %d spare children, %d running children. Spawning rate %d", wp->config->name, active, idle, wp->running_children, wp->idle_spawn_rate);
 
 		if (idle > wp->config->pm_max_spare_servers && last_idle_child) {
-			last_idle_child->idle_kill = 1;
-			fpm_pctl_kill(last_idle_child->pid, FPM_PCTL_QUIT);
+			fpm_pctl_kill_idle_child(last_idle_child);
 			wp->idle_spawn_rate = 1;
 			continue;
 		}

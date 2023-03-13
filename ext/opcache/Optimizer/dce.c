@@ -111,7 +111,6 @@ static inline zend_bool may_have_side_effects(
 		case ZEND_ROPE_INIT:
 		case ZEND_ROPE_ADD:
 		case ZEND_INIT_ARRAY:
-		case ZEND_ADD_ARRAY_ELEMENT:
 		case ZEND_SPACESHIP:
 		case ZEND_STRLEN:
 		case ZEND_COUNT:
@@ -127,6 +126,12 @@ static inline zend_bool may_have_side_effects(
 		case ZEND_FUNC_GET_ARGS:
 		case ZEND_ARRAY_KEY_EXISTS:
 			/* No side effects */
+			return 0;
+		case ZEND_ADD_ARRAY_ELEMENT:
+			/* TODO: We can't free two vars. Keep instruction alive. <?php [0, "$a" => "$b"]; */
+			if ((opline->op1_type & (IS_VAR|IS_TMP_VAR)) && (opline->op2_type & (IS_VAR|IS_TMP_VAR))) {
+				return 1;
+			}
 			return 0;
 		case ZEND_ROPE_END:
 			/* TODO: Rope dce optimization, see #76446 */
@@ -349,9 +354,7 @@ static zend_bool try_remove_var_def(context *ctx, int free_var, int use_chain, z
 				case ZEND_PRE_INC:
 				case ZEND_PRE_DEC:
 				case ZEND_PRE_INC_OBJ:
-				case ZEND_POST_INC_OBJ:
 				case ZEND_PRE_DEC_OBJ:
-				case ZEND_POST_DEC_OBJ:
 				case ZEND_DO_ICALL:
 				case ZEND_DO_UCALL:
 				case ZEND_DO_FCALL_BY_NAME:
@@ -388,7 +391,9 @@ static zend_bool dce_instr(context *ctx, zend_op *opline, zend_ssa_op *ssa_op) {
 	}
 
 	/* We mark FREEs as dead, but they're only really dead if the destroyed var is dead */
-	if (opline->opcode == ZEND_FREE && may_be_refcounted(ssa->var_info[ssa_op->op1_use].type)
+	if (opline->opcode == ZEND_FREE
+			&& ((ssa->var_info[ssa_op->op1_use].type & (MAY_BE_REF|MAY_BE_ANY|MAY_BE_UNDEF)) == 0
+				|| may_be_refcounted(ssa->var_info[ssa_op->op1_use].type))
 			&& !is_var_dead(ctx, ssa_op->op1_use)) {
 		return 0;
 	}
@@ -436,13 +441,19 @@ static inline int get_common_phi_source(zend_ssa *ssa, zend_ssa_phi *phi) {
 	int common_source = -1;
 	int source;
 	FOREACH_PHI_SOURCE(phi, source) {
+		if (source == phi->ssa_var) {
+			continue;
+		}
 		if (common_source == -1) {
 			common_source = source;
-		} else if (common_source != source && source != phi->ssa_var) {
+		} else if (common_source != source) {
 			return -1;
 		}
 	} FOREACH_PHI_SOURCE_END();
-	ZEND_ASSERT(common_source != -1);
+
+	/* If all sources are phi->ssa_var this phi must be in an unreachable cycle.
+	 * We can't easily drop the phi in that case, as we don't have something to replace it with.
+	 * Ideally SCCP would eliminate the whole cycle. */
 	return common_source;
 }
 
@@ -480,6 +491,10 @@ static inline zend_bool may_break_varargs(const zend_op_array *op_array, const z
 		return 1;
 	}
 	return 0;
+}
+
+static inline zend_bool may_throw_dce_exception(const zend_op *opline) {
+	return opline->opcode == ZEND_ADD_ARRAY_ELEMENT && opline->op2_type == IS_UNUSED;
 }
 
 int dce_optimize_op_array(zend_op_array *op_array, zend_ssa *ssa, zend_bool reorder_dtor_effects) {
@@ -548,7 +563,8 @@ int dce_optimize_op_array(zend_op_array *op_array, zend_ssa *ssa, zend_bool reor
 					add_operands_to_worklists(&ctx, &op_array->opcodes[op_data], &ssa->ops[op_data], ssa, 0);
 				}
 			} else if (may_have_side_effects(op_array, ssa, &op_array->opcodes[i], &ssa->ops[i], ctx.reorder_dtor_effects)
-					|| zend_may_throw(&op_array->opcodes[i], &ssa->ops[i], op_array, ssa)
+					|| (zend_may_throw(&op_array->opcodes[i], &ssa->ops[i], op_array, ssa)
+						&& !may_throw_dce_exception(&op_array->opcodes[i]))
 					|| (has_varargs && may_break_varargs(op_array, ssa, &ssa->ops[i]))) {
 				if (op_array->opcodes[i].opcode == ZEND_NEW
 						&& op_array->opcodes[i+1].opcode == ZEND_DO_FCALL
@@ -578,7 +594,10 @@ int dce_optimize_op_array(zend_op_array *op_array, zend_ssa *ssa, zend_bool reor
 		while ((i = zend_bitset_pop_first(ctx.instr_worklist, ctx.instr_worklist_len)) >= 0) {
 			zend_bitset_excl(ctx.instr_dead, i);
 			add_operands_to_worklists(&ctx, &op_array->opcodes[i], &ssa->ops[i], ssa, 1);
-			if (i < op_array->last && op_array->opcodes[i+1].opcode == ZEND_OP_DATA) {
+			if (i < op_array->last
+			 && (op_array->opcodes[i+1].opcode == ZEND_OP_DATA
+			  || (op_array->opcodes[i].opcode == ZEND_NEW
+			   && op_array->opcodes[i+1].opcode == ZEND_DO_FCALL))) {
 				zend_bitset_excl(ctx.instr_dead, i+1);
 				add_operands_to_worklists(&ctx, &op_array->opcodes[i+1], &ssa->ops[i+1], ssa, 1);
 			}

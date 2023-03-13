@@ -12,8 +12,11 @@ interface _ZendTestInterface
 class _ZendTestClass {
     public static function is_object(): int {}
 
-    /** @deprecated */
-    public function __toString(): string {}
+    /**
+     * @deprecated
+     * @return string
+     */
+    public function __toString() {}
 
     public function returnsStatic(): static {}
 }
@@ -58,6 +61,12 @@ function zend_string_or_stdclass($param): stdClass|string {}
 function zend_string_or_stdclass_or_null($param): stdClass|string|null {}
 
 function zend_iterable(iterable $arg1, ?iterable $arg2 = null): void {}
+
+function zend_weakmap_attach(object $object, mixed $value): bool {}
+function zend_weakmap_remove(object $object): bool {}
+function zend_weakmap_dump(): array {}
+
+function zend_get_current_func_name(): string {}
 
 }
 

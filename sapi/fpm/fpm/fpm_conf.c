@@ -591,7 +591,7 @@ static char *fpm_conf_set_array(zval *key, zval *value, void **config, int conve
 }
 /* }}} */
 
-static void *fpm_worker_pool_config_alloc() /* {{{ */
+static void *fpm_worker_pool_config_alloc(void)
 {
 	struct fpm_worker_pool_s *wp;
 
@@ -632,7 +632,6 @@ static void *fpm_worker_pool_config_alloc() /* {{{ */
 	current_wp = wp;
 	return wp->config;
 }
-/* }}} */
 
 int fpm_worker_pool_config_free(struct fpm_worker_pool_config_s *wpc) /* {{{ */
 {
@@ -766,8 +765,8 @@ static int fpm_evaluate_full_path(char **path, struct fpm_worker_pool_s *wp, cha
 			}
 
 			if (strlen(*path) > strlen("$prefix")) {
-				free(*path);
 				tmp = strdup((*path) + strlen("$prefix"));
+				free(*path);
 				*path = tmp;
 			} else {
 				free(*path);
@@ -792,7 +791,7 @@ static int fpm_evaluate_full_path(char **path, struct fpm_worker_pool_s *wp, cha
 }
 /* }}} */
 
-static int fpm_conf_process_all_pools() /* {{{ */
+static int fpm_conf_process_all_pools(void)
 {
 	struct fpm_worker_pool_s *wp, *wp2;
 
@@ -1188,9 +1187,8 @@ static int fpm_conf_process_all_pools() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
-int fpm_conf_unlink_pid() /* {{{ */
+int fpm_conf_unlink_pid(void)
 {
 	if (fpm_global_config.pid_file) {
 		if (0 > unlink(fpm_global_config.pid_file)) {
@@ -1200,9 +1198,8 @@ int fpm_conf_unlink_pid() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
-int fpm_conf_write_pid() /* {{{ */
+int fpm_conf_write_pid(void)
 {
 	int fd;
 
@@ -1229,7 +1226,6 @@ int fpm_conf_write_pid() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
 static int fpm_conf_post_process(int force_daemon) /* {{{ */
 {
@@ -1286,6 +1282,10 @@ static int fpm_conf_post_process(int force_daemon) /* {{{ */
 #endif
 	{
 		fpm_evaluate_full_path(&fpm_global_config.error_log, NULL, PHP_LOCALSTATEDIR, 0);
+	}
+
+	if (!fpm_global_config.daemonize && 0 > fpm_stdio_save_original_stderr()) {
+		return -1;
 	}
 
 	if (0 > fpm_stdio_open_error_log(0)) {
@@ -1624,7 +1624,10 @@ int fpm_conf_load_ini_file(char *filename) /* {{{ */
 		tmp = zend_parse_ini_string(buf, 1, ZEND_INI_SCANNER_NORMAL, (zend_ini_parser_cb_t)fpm_conf_ini_parser, &error);
 		ini_filename = filename;
 		if (error || tmp == FAILURE) {
-			if (ini_include) free(ini_include);
+			if (ini_include) {
+				free(ini_include);
+				ini_include = NULL;
+			}
 			ini_recursion--;
 			close(fd);
 			free(buf);
@@ -1653,7 +1656,7 @@ int fpm_conf_load_ini_file(char *filename) /* {{{ */
 }
 /* }}} */
 
-static void fpm_conf_dump() /* {{{ */
+static void fpm_conf_dump(void)
 {
 	struct fpm_worker_pool_s *wp;
 
@@ -1756,7 +1759,6 @@ static void fpm_conf_dump() /* {{{ */
 		zlog(ZLOG_NOTICE, " ");
 	}
 }
-/* }}} */
 
 int fpm_conf_init_main(int test_conf, int force_daemon) /* {{{ */
 {

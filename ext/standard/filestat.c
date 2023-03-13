@@ -42,6 +42,16 @@
 #  include <os2.h>
 #endif
 
+#if defined(__APPLE__)
+  /*
+   Apple statvfs has an interger overflow in libc copying to statvfs.
+   cvt_statfs_to_statvfs(struct statfs *from, struct statvfs *to) {
+   to->f_blocks = (fsblkcnt_t)from->f_blocks;
+   */
+#  undef HAVE_SYS_STATVFS_H
+#  undef HAVE_STATVFS
+#endif
+
 #if defined(HAVE_SYS_STATVFS_H) && defined(HAVE_STATVFS)
 # include <sys/statvfs.h>
 #elif defined(HAVE_SYS_STATFS_H) && defined(HAVE_STATFS)
@@ -176,18 +186,22 @@ static int php_disk_total_space(char *path, double *space) /* {{{ */
 PHP_FUNCTION(disk_total_space)
 {
 	double bytestotal;
-	char *path;
+	char *path, fullpath[MAXPATHLEN];
 	size_t path_len;
 
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_PATH(path, path_len)
 	ZEND_PARSE_PARAMETERS_END();
 
-	if (php_check_open_basedir(path)) {
+	if (!expand_filepath(path, fullpath)) {
 		RETURN_FALSE;
 	}
 
-	if (php_disk_total_space(path, &bytestotal) == SUCCESS) {
+	if (php_check_open_basedir(fullpath)) {
+		RETURN_FALSE;
+	}
+
+	if (php_disk_total_space(fullpath, &bytestotal) == SUCCESS) {
 		RETURN_DOUBLE(bytestotal);
 	}
 	RETURN_FALSE;
@@ -269,18 +283,22 @@ static int php_disk_free_space(char *path, double *space) /* {{{ */
 PHP_FUNCTION(disk_free_space)
 {
 	double bytesfree;
-	char *path;
+	char *path, fullpath[MAXPATHLEN];
 	size_t path_len;
 
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_PATH(path, path_len)
 	ZEND_PARSE_PARAMETERS_END();
 
-	if (php_check_open_basedir(path)) {
+	if (!expand_filepath(path, fullpath)) {
 		RETURN_FALSE;
 	}
 
-	if (php_disk_free_space(path, &bytesfree) == SUCCESS) {
+	if (php_check_open_basedir(fullpath)) {
+		RETURN_FALSE;
+	}
+
+	if (php_disk_free_space(fullpath, &bytesfree) == SUCCESS) {
 		RETURN_DOUBLE(bytesfree);
 	}
 	RETURN_FALSE;

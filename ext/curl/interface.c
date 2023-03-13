@@ -1638,9 +1638,7 @@ static int curl_debug(CURL *cp, curl_infotype type, char *buf, size_t buf_len, v
 		if (ch->header.str) {
 			zend_string_release_ex(ch->header.str, 0);
 		}
-		if (buf_len > 0) {
-			ch->header.str = zend_string_init(buf, buf_len, 0);
-		}
+		ch->header.str = zend_string_init(buf, buf_len, 0);
 	}
 
 	return 0;
@@ -1922,6 +1920,7 @@ void _php_setup_easy_copy_handlers(php_curl *ch, php_curl *source)
 	curl_easy_setopt(ch->cp, CURLOPT_FILE,              (void *) ch);
 	curl_easy_setopt(ch->cp, CURLOPT_INFILE,            (void *) ch);
 	curl_easy_setopt(ch->cp, CURLOPT_WRITEHEADER,       (void *) ch);
+	curl_easy_setopt(ch->cp, CURLOPT_DEBUGDATA,         (void *) ch);
 
 	if (source->handlers->progress) {
 		ch->handlers->progress = ecalloc(1, sizeof(php_curl_progress));
@@ -2299,7 +2298,6 @@ static int _php_curl_setopt(php_curl *ch, zend_long option, zval *zvalue, bool i
 		case CURLOPT_RTSP_REQUEST:
 		case CURLOPT_RTSP_SERVER_CSEQ:
 		case CURLOPT_WILDCARDMATCH:
-		case CURLOPT_TLSAUTH_TYPE:
 		case CURLOPT_GSSAPI_DELEGATION:
 		case CURLOPT_ACCEPTTIMEOUT_MS:
 		case CURLOPT_SSL_OPTIONS:
@@ -2418,6 +2416,7 @@ static int _php_curl_setopt(php_curl *ch, zend_long option, zval *zvalue, bool i
 		case CURLOPT_MAIL_FROM:
 		case CURLOPT_RTSP_STREAM_URI:
 		case CURLOPT_RTSP_TRANSPORT:
+		case CURLOPT_TLSAUTH_TYPE:
 		case CURLOPT_TLSAUTH_PASSWORD:
 		case CURLOPT_TLSAUTH_USERNAME:
 		case CURLOPT_ACCEPT_ENCODING:

@@ -151,7 +151,9 @@ void php_register_signal_constants(INIT_FUNC_ARGS)
 #ifdef SIGPOLL
 	REGISTER_LONG_CONSTANT("SIGPOLL",  (zend_long) SIGPOLL, CONST_CS | CONST_PERSISTENT);
 #endif
+#ifdef SIGIO
 	REGISTER_LONG_CONSTANT("SIGIO",    (zend_long) SIGIO, CONST_CS | CONST_PERSISTENT);
+#endif
 #ifdef SIGPWR
 	REGISTER_LONG_CONSTANT("SIGPWR",   (zend_long) SIGPWR, CONST_CS | CONST_PERSISTENT);
 #endif
@@ -1160,7 +1162,7 @@ static void pcntl_siginfo_to_zval(int signo, siginfo_t *siginfo, zval *user_sigi
 			case SIGBUS:
 				add_assoc_double_ex(user_siginfo, "addr", sizeof("addr")-1, (zend_long)siginfo->si_addr);
 				break;
-#ifdef SIGPOLL
+#if defined(SIGPOLL) && !defined(__CYGWIN__)
 			case SIGPOLL:
 				add_assoc_long_ex(user_siginfo, "band", sizeof("band")-1, siginfo->si_band);
 # ifdef si_fd

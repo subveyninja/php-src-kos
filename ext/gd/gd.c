@@ -686,6 +686,12 @@ PHP_FUNCTION(imageloadfont)
 		font->w = FLIPWORD(font->w);
 		font->h = FLIPWORD(font->h);
 		font->nchars = FLIPWORD(font->nchars);
+		if (overflow2(font->nchars, font->h) || overflow2(font->nchars * font->h, font->w )) {
+			php_error_docref(NULL, E_WARNING, "Error reading font, invalid font header");
+			efree(font);
+			php_stream_close(stream);
+			RETURN_FALSE;
+		}
 		body_size = font->w * font->h * font->nchars;
 	}
 
@@ -696,6 +702,7 @@ PHP_FUNCTION(imageloadfont)
 		RETURN_FALSE;
 	}
 
+	ZEND_ASSERT(body_size > 0);
 	font->data = emalloc(body_size);
 	b = 0;
 	while (b < body_size && (n = php_stream_read(stream, &font->data[b], body_size - b)) > 0) {
@@ -3013,22 +3020,22 @@ PHP_FUNCTION(imagecopyresized)
 	dstW = DW;
 
 	if (dstW <= 0) {
-		zend_argument_value_error(3, "must be greater than 0");
+		zend_argument_value_error(7, "must be greater than 0");
 		RETURN_THROWS();
 	}
 
 	if (dstH <= 0) {
-		zend_argument_value_error(4, "must be greater than 0");
+		zend_argument_value_error(8, "must be greater than 0");
 		RETURN_THROWS();
 	}
 
 	if (srcW <= 0) {
-		zend_argument_value_error(5, "must be greater than 0");
+		zend_argument_value_error(9, "must be greater than 0");
 		RETURN_THROWS();
 	}
 
 	if (srcH <= 0) {
-		zend_argument_value_error(6, "must be greater than 0");
+		zend_argument_value_error(10, "must be greater than 0");
 		RETURN_THROWS();
 	}
 
@@ -4190,9 +4197,15 @@ static void _php_image_output_ctx(INTERNAL_FUNCTION_PARAMETERS, int image_type, 
 			}
 			(*func_p)(im, ctx, (int) quality);
 			break;
+#ifdef HAVE_GD_PNG
 		case PHP_GDIMG_TYPE_PNG:
-			(*func_p)(im, ctx, (int) quality, (int) basefilter);
+#ifdef HAVE_GD_BUNDLED
+			gdImagePngCtxEx(im, ctx, (int) quality, (int) basefilter);
+#else
+			gdImagePngCtxEx(im, ctx, (int) quality);
+#endif
 			break;
+#endif
 		case PHP_GDIMG_TYPE_GIF:
 			(*func_p)(im, ctx);
 			break;

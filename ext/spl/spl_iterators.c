@@ -441,25 +441,41 @@ static const zend_object_iterator_funcs spl_recursive_it_iterator_funcs = {
 
 static zend_object_iterator *spl_recursive_it_get_iterator(zend_class_entry *ce, zval *zobject, int by_ref)
 {
-	spl_recursive_it_iterator *iterator;
-	spl_recursive_it_object *object;
-
 	if (by_ref) {
 		zend_throw_error(NULL, "An iterator cannot be used with foreach by reference");
 		return NULL;
 	}
-	iterator = emalloc(sizeof(spl_recursive_it_iterator));
-	object   = Z_SPLRECURSIVE_IT_P(zobject);
+
+	spl_recursive_it_object *object = Z_SPLRECURSIVE_IT_P(zobject);
 	if (object->iterators == NULL) {
 		zend_throw_error(NULL, "Object is not initialized");
 		return NULL;
 	}
 
+	spl_recursive_it_iterator *iterator = emalloc(sizeof(spl_recursive_it_iterator));
 	zend_iterator_init((zend_object_iterator*)iterator);
 
 	ZVAL_OBJ_COPY(&iterator->intern.data, Z_OBJ_P(zobject));
 	iterator->intern.funcs = &spl_recursive_it_iterator_funcs;
 	return (zend_object_iterator*)iterator;
+}
+
+static int spl_get_iterator_from_aggregate(zval *retval, zend_class_entry *ce, zend_object *obj) {
+	zend_function **getiterator_cache =
+		ce->iterator_funcs_ptr ? &ce->iterator_funcs_ptr->zf_new_iterator : NULL;
+	zend_call_method_with_0_params(obj, ce, getiterator_cache, "getiterator", retval);
+	if (EG(exception)) {
+		return FAILURE;
+	}
+	if (Z_TYPE_P(retval) != IS_OBJECT
+			|| !instanceof_function(Z_OBJCE_P(retval), zend_ce_traversable)) {
+		zend_throw_exception_ex(spl_ce_LogicException, 0,
+			"%s::getIterator() must return an object that implements Traversable",
+			ZSTR_VAL(ce->name));
+		zval_ptr_dtor(retval);
+		return FAILURE;
+	}
+	return SUCCESS;
 }
 
 static void spl_recursive_it_it_construct(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry *ce_base, zend_class_entry *ce_inner, recursive_it_it_type rit_type)
@@ -485,9 +501,10 @@ static void spl_recursive_it_it_construct(INTERNAL_FUNCTION_PARAMETERS, zend_cla
 
 			zend_replace_error_handling(EH_THROW, spl_ce_InvalidArgumentException, &error_handling);
 			if (instanceof_function(Z_OBJCE_P(iterator), zend_ce_aggregate)) {
-				zend_function **getiterator_cache = Z_OBJCE_P(iterator)->iterator_funcs_ptr
-					? &Z_OBJCE_P(iterator)->iterator_funcs_ptr->zf_new_iterator : NULL;
-				zend_call_method_with_0_params(Z_OBJ_P(iterator), Z_OBJCE_P(iterator), getiterator_cache, "getiterator", &aggregate_retval);
+				if (spl_get_iterator_from_aggregate(
+						&aggregate_retval, Z_OBJCE_P(iterator), Z_OBJ_P(iterator)) == FAILURE) {
+					RETURN_THROWS();
+				}
 				iterator = &aggregate_retval;
 			} else {
 				Z_ADDREF_P(iterator);
@@ -510,9 +527,10 @@ static void spl_recursive_it_it_construct(INTERNAL_FUNCTION_PARAMETERS, zend_cla
 
 			zend_replace_error_handling(EH_THROW, spl_ce_InvalidArgumentException, &error_handling);
 			if (instanceof_function(Z_OBJCE_P(iterator), zend_ce_aggregate)) {
-				zend_function **getiterator_cache = Z_OBJCE_P(iterator)->iterator_funcs_ptr
-					? &Z_OBJCE_P(iterator)->iterator_funcs_ptr->zf_new_iterator : NULL;
-				zend_call_method_with_0_params(Z_OBJ_P(iterator), Z_OBJCE_P(iterator), getiterator_cache, "getiterator", &aggregate_retval);
+				if (spl_get_iterator_from_aggregate(
+						&aggregate_retval, Z_OBJCE_P(iterator), Z_OBJ_P(iterator)) == FAILURE) {
+					RETURN_THROWS();
+				}
 				iterator = &aggregate_retval;
 			} else {
 				Z_ADDREF_P(iterator);
@@ -1340,15 +1358,7 @@ static spl_dual_it_object* spl_dual_it_construct(INTERNAL_FUNCTION_PARAMETERS, z
 					ce = ce_cast;
 				}
 				if (instanceof_function(ce, zend_ce_aggregate)) {
-					zend_function **getiterator_cache =
-						ce->iterator_funcs_ptr ? &ce->iterator_funcs_ptr->zf_new_iterator : NULL;
-					zend_call_method_with_0_params(Z_OBJ_P(zobject), ce, getiterator_cache, "getiterator", &retval);
-					if (EG(exception)) {
-						zval_ptr_dtor(&retval);
-						return NULL;
-					}
-					if (Z_TYPE(retval) != IS_OBJECT || !instanceof_function(Z_OBJCE(retval), zend_ce_traversable)) {
-						zend_throw_exception_ex(spl_ce_LogicException, 0, "%s::getIterator() must return an object that implements Traversable", ZSTR_VAL(ce->name));
+					if (spl_get_iterator_from_aggregate(&retval, ce, Z_OBJ_P(zobject)) == FAILURE) {
 						return NULL;
 					}
 					zobject = &retval;
@@ -3147,6 +3157,9 @@ PHP_FUNCTION(iterator_to_array)
 
 static int spl_iterator_count_apply(zend_object_iterator *iter, void *puser) /* {{{ */
 {
+	if (UNEXPECTED(*(zend_long*)puser == ZEND_LONG_MAX)) {
+		return ZEND_HASH_APPLY_STOP;
+	}
 	(*(zend_long*)puser)++;
 	return ZEND_HASH_APPLY_KEEP;
 }

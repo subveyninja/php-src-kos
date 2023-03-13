@@ -155,6 +155,9 @@ ZEND_METHOD(Closure, call)
 		my_function.common.fn_flags &= ~ZEND_ACC_CLOSURE;
 		/* use scope of passed object */
 		my_function.common.scope = Z_OBJCE_P(newthis);
+		if (closure->func.type == ZEND_INTERNAL_FUNCTION) {
+			my_function.internal_function.handler = closure->orig_internal_handler;
+		}
 		fci_cache.function_handler = &my_function;
 
 		/* Runtime cache relies on bound scope to be immutable, hence we need a separate rt cache in case scope changed */
@@ -285,6 +288,7 @@ static ZEND_NAMED_FUNCTION(zend_closure_call_magic) /* {{{ */ {
 	}
 
 	fcc.object = fci.object = Z_OBJ_P(ZEND_THIS);
+	fcc.called_scope = zend_get_called_scope(EG(current_execute_data));
 
 	zend_call_function(&fci, &fcc);
 

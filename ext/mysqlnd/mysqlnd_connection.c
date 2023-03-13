@@ -1436,14 +1436,6 @@ MYSQLND_METHOD(mysqlnd_conn_data, get_server_version)(const MYSQLND_CONN_DATA * 
 		return 0;
 	}
 
-#define MARIA_DB_VERSION_HACK_PREFIX "5.5.5-"
-
-	if ((conn->server_capabilities & CLIENT_PLUGIN_AUTH)
-		&& !strncmp(p, MARIA_DB_VERSION_HACK_PREFIX, sizeof(MARIA_DB_VERSION_HACK_PREFIX)-1))
-	{
-		p += sizeof(MARIA_DB_VERSION_HACK_PREFIX)-1;
-	}
-
 	major = ZEND_STRTOL(p, &p, 10);
 	p += 1; /* consume the dot */
 	minor = ZEND_STRTOL(p, &p, 10);
@@ -1476,13 +1468,14 @@ MYSQLND_METHOD(mysqlnd_conn_data, next_result)(MYSQLND_CONN_DATA * const conn)
 	DBG_ENTER("mysqlnd_conn_data::next_result");
 	DBG_INF_FMT("conn=%llu", conn->thread_id);
 
+	SET_EMPTY_ERROR(conn->error_info);
+
 	if (PASS == conn->m->local_tx_start(conn, this_func)) {
 		do {
 			if (GET_CONNECTION_STATE(&conn->state) != CONN_NEXT_RESULT_PENDING) {
 				break;
 			}
 
-			SET_EMPTY_ERROR(conn->error_info);
 			UPSERT_STATUS_SET_AFFECTED_ROWS_TO_ERROR(conn->upsert_status);
 			/*
 			  We are sure that there is a result set, since conn->state is set accordingly
@@ -2622,7 +2615,9 @@ mysqlnd_poll(MYSQLND **r_array, MYSQLND **e_array, MYSQLND ***dont_poll, long se
 		DBG_RETURN(FAIL);
 	}
 
-	PHP_SAFE_MAX_FD(max_fd, max_set_count);
+	if (!PHP_SAFE_MAX_FD(max_fd, max_set_count)) {
+		DBG_RETURN(FAIL);
+	}
 
 	/* Solaris + BSD do not like microsecond values which are >= 1 sec */
 	if (usec > 999999) {

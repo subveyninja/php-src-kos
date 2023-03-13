@@ -784,7 +784,7 @@ static void _function_string(smart_str *str, zend_function *fptr, zend_class_ent
 		} else if (fptr->common.scope->parent) {
 			lc_name = zend_string_tolower(fptr->common.function_name);
 			if ((overwrites = zend_hash_find_ptr(&fptr->common.scope->parent->function_table, lc_name)) != NULL) {
-				if (fptr->common.scope != overwrites->common.scope) {
+				if (fptr->common.scope != overwrites->common.scope && !(overwrites->common.fn_flags & ZEND_ACC_PRIVATE)) {
 					smart_str_append_printf(str, ", overwrites %s", ZSTR_VAL(overwrites->common.scope->name));
 				}
 			}
@@ -1633,6 +1633,28 @@ ZEND_METHOD(ReflectionFunctionAbstract, getClosureScopeClass)
 }
 /* }}} */
 
+/* {{{ Returns the called scope associated to the closure */
+ZEND_METHOD(ReflectionFunctionAbstract, getClosureCalledClass)
+{
+	reflection_object *intern;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		RETURN_THROWS();
+	}
+	GET_REFLECTION_OBJECT();
+	if (!Z_ISUNDEF(intern->obj)) {
+		zend_class_entry *called_scope;
+		zend_function *closure_func;
+		zend_object *object;
+		if (Z_OBJ_HANDLER(intern->obj, get_closure)
+		 && Z_OBJ_HANDLER(intern->obj, get_closure)(Z_OBJ(intern->obj), &called_scope, &closure_func, &object, 1) == SUCCESS
+		 && closure_func && (called_scope || closure_func->common.scope)) {
+			zend_reflection_class_factory(called_scope ? (zend_class_entry *) called_scope : closure_func->common.scope, return_value);
+		}
+	}
+}
+/* }}} */
+
 /* {{{ Returns a dynamically created closure for the function */
 ZEND_METHOD(ReflectionFunction, getClosure)
 {
@@ -1770,7 +1792,7 @@ ZEND_METHOD(ReflectionFunctionAbstract, getAttributes)
 
 	GET_REFLECTION_OBJECT_PTR(fptr);
 
-	if (fptr->common.scope) {
+	if (fptr->common.scope && !(fptr->common.fn_flags & ZEND_ACC_CLOSURE)) {
 		target = ZEND_ATTRIBUTE_TARGET_METHOD;
 	} else {
 		target = ZEND_ATTRIBUTE_TARGET_FUNCTION;
@@ -4187,17 +4209,19 @@ ZEND_METHOD(ReflectionClass, getMethod)
 /* }}} */
 
 /* {{{ _addmethod */
-static void _addmethod(zend_function *mptr, zend_class_entry *ce, zval *retval, zend_long filter)
+static zend_bool _addmethod(zend_function *mptr, zend_class_entry *ce, zval *retval, zend_long filter)
 {
 	if ((mptr->common.fn_flags & ZEND_ACC_PRIVATE) && mptr->common.scope != ce) {
-		return;
+		return 0;
 	}
 
 	if (mptr->common.fn_flags & filter) {
 		zval method;
 		reflection_method_factory(ce, mptr, NULL, &method);
 		add_next_index_zval(retval, &method);
+		return 1;
 	}
+	return 0;
 }
 /* }}} */
 
@@ -4237,7 +4261,9 @@ ZEND_METHOD(ReflectionClass, getMethods)
 		}
 		zend_function *closure = zend_get_closure_invoke_method(obj);
 		if (closure) {
-			_addmethod(closure, ce, return_value, filter);
+			if (!_addmethod(closure, ce, return_value, filter)) {
+				_free_function(closure);
+			}
 		}
 		if (!has_obj) {
 			zval_ptr_dtor(&obj_tmp);
@@ -4454,7 +4480,7 @@ ZEND_METHOD(ReflectionClass, getConstants)
 
 	array_init(return_value);
 	ZEND_HASH_FOREACH_STR_KEY_PTR(&ce->constants_table, key, constant) {
-		if (UNEXPECTED(zval_update_constant_ex(&constant->value, ce) != SUCCESS)) {
+		if (UNEXPECTED(zval_update_constant_ex(&constant->value, constant->ce) != SUCCESS)) {
 			RETURN_THROWS();
 		}
 
@@ -4511,7 +4537,7 @@ ZEND_METHOD(ReflectionClass, getConstant)
 
 	GET_REFLECTION_OBJECT_PTR(ce);
 	ZEND_HASH_FOREACH_PTR(&ce->constants_table, c) {
-		if (UNEXPECTED(zval_update_constant_ex(&c->value, ce) != SUCCESS)) {
+		if (UNEXPECTED(zval_update_constant_ex(&c->value, c->ce) != SUCCESS)) {
 			RETURN_THROWS();
 		}
 	} ZEND_HASH_FOREACH_END();
@@ -6290,9 +6316,7 @@ static int call_attribute_constructor(
 	zval *args, uint32_t argc, HashTable *named_params, zend_string *filename)
 {
 	zend_function *ctor = ce->constructor;
-	zend_execute_data *prev_execute_data, dummy_frame;
-	zend_function dummy_func;
-	zend_op dummy_opline;
+	zend_execute_data *call = NULL;
 	ZEND_ASSERT(ctor != NULL);
 
 	if (!(ctor->common.fn_flags & ZEND_ACC_PUBLIC)) {
@@ -6303,30 +6327,43 @@ static int call_attribute_constructor(
 	if (filename) {
 		/* Set up dummy call frame that makes it look like the attribute was invoked
 		 * from where it occurs in the code. */
-		memset(&dummy_frame, 0, sizeof(zend_execute_data));
+		zend_function dummy_func;
+		zend_op *opline;
+
 		memset(&dummy_func, 0, sizeof(zend_function));
-		memset(&dummy_opline, 0, sizeof(zend_op));
 
-		prev_execute_data = EG(current_execute_data);
-		dummy_frame.prev_execute_data = prev_execute_data;
-		dummy_frame.func = &dummy_func;
-		dummy_frame.opline = &dummy_opline;
+		call = zend_vm_stack_push_call_frame_ex(
+			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_execute_data), sizeof(zval)) +
+			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op), sizeof(zval)) +
+			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_function), sizeof(zval)),
+			0, &dummy_func, 0, NULL);
 
-		dummy_func.type = ZEND_USER_FUNCTION;
-		dummy_func.common.fn_flags =
+		opline = (zend_op*)(call + 1);
+		memset(opline, 0, sizeof(zend_op));
+		opline->opcode = ZEND_DO_FCALL;
+		opline->lineno = attr->lineno;
+
+		call->opline = opline;
+		call->call = NULL;
+		call->return_value = NULL;
+		call->func = (zend_function*)(call->opline + 1);
+		call->prev_execute_data = EG(current_execute_data);
+
+		memset(call->func, 0, sizeof(zend_function));
+		call->func->type = ZEND_USER_FUNCTION;
+		call->func->op_array.fn_flags =
 			attr->flags & ZEND_ATTRIBUTE_STRICT_TYPES ? ZEND_ACC_STRICT_TYPES : 0;
-		dummy_func.op_array.filename = filename;
+		call->func->op_array.fn_flags |= ZEND_ACC_CALL_VIA_TRAMPOLINE;
+		call->func->op_array.filename = filename;
 
-		dummy_opline.opcode = ZEND_DO_FCALL;
-		dummy_opline.lineno = attr->lineno;
-
-		EG(current_execute_data) = &dummy_frame;
+		EG(current_execute_data) = call;
 	}
 
 	zend_call_known_function(ctor, obj, obj->ce, NULL, argc, args, named_params);
 
 	if (filename) {
-		EG(current_execute_data) = prev_execute_data;
+		EG(current_execute_data) = call->prev_execute_data;
+		zend_vm_stack_free_call_frame(call);
 	}
 
 	if (EG(exception)) {
@@ -6435,7 +6472,7 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
 		for (uint32_t i = 0; i < attr->data->argc; i++) {
 			zval val;
 			if (FAILURE == zend_get_attribute_value(&val, attr->data, i, attr->scope)) {
-				attribute_ctor_cleanup(&obj, args, i, named_params);
+				attribute_ctor_cleanup(&obj, args, argc, named_params);
 				RETURN_THROWS();
 			}
 			if (attr->data->args[i].name) {
@@ -6618,7 +6655,6 @@ PHP_MINIT_FUNCTION(reflection) /* {{{ */
 
 	INIT_CLASS_ENTRY(_reflection_entry, "ReflectionAttribute", class_ReflectionAttribute_methods);
 	reflection_init_class_handlers(&_reflection_entry);
-	_reflection_entry.ce_flags |= ZEND_ACC_FINAL;
 	reflection_attribute_ptr = zend_register_internal_class(&_reflection_entry);
 
 	REGISTER_REFLECTION_CLASS_CONST_LONG(attribute, "IS_INSTANCEOF", REFLECTION_ATTRIBUTE_IS_INSTANCEOF);

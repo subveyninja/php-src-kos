@@ -323,7 +323,7 @@ static inline zend_bool can_elide_return_type_check(
 }
 
 static zend_bool opline_supports_assign_contraction(
-		zend_ssa *ssa, zend_op *opline, int src_var, uint32_t cv_var) {
+		zend_op_array *op_array, zend_ssa *ssa, zend_op *opline, int src_var, uint32_t cv_var) {
 	if (opline->opcode == ZEND_NEW) {
 		/* see Zend/tests/generators/aborted_yield_during_new.phpt */
 		return 0;
@@ -357,7 +357,34 @@ static zend_bool opline_supports_assign_contraction(
 		return opline->op1_type != IS_CV || opline->op1.var != cv_var;
 	}
 
+	if ((opline->opcode == ZEND_ASSIGN_OP
+	  || opline->opcode == ZEND_ASSIGN_OBJ
+	  || opline->opcode == ZEND_ASSIGN_DIM)
+	 && opline->op1_type == IS_CV
+	 && opline->op1.var == cv_var
+	 && zend_may_throw(opline, &ssa->ops[ssa->vars[src_var].definition], op_array, ssa)) {
+		return 0;
+	}
+
 	return 1;
+}
+
+static bool variable_defined_or_used_in_range(zend_ssa *ssa, int var, int start, int end)
+{
+	while (start < end) {
+		const zend_ssa_op *ssa_op = &ssa->ops[start];
+		if ((ssa_op->op1_def >= 0 && ssa->vars[ssa_op->op1_def].var == var) ||
+			(ssa_op->op2_def >= 0 && ssa->vars[ssa_op->op2_def].var == var) ||
+			(ssa_op->result_def >= 0 && ssa->vars[ssa_op->result_def].var == var) ||
+			(ssa_op->op1_use >= 0 && ssa->vars[ssa_op->op1_use].var == var) ||
+			(ssa_op->op2_use >= 0 && ssa->vars[ssa_op->op2_use].var == var) ||
+			(ssa_op->result_use >= 0 && ssa->vars[ssa_op->result_use].var == var)
+		) {
+			return 1;
+		}
+		start++;
+	}
+	return 0;
 }
 
 int zend_dfa_optimize_calls(zend_op_array *op_array, zend_ssa *ssa)
@@ -575,11 +602,19 @@ static void replace_predecessor(zend_ssa *ssa, int block_id, int old_pred, int n
 
 		/* Also remove the corresponding phi node entries */
 		for (phi = ssa->blocks[block_id].phis; phi; phi = phi->next) {
-			memmove(
-				phi->sources + old_pred_idx,
-				phi->sources + old_pred_idx + 1,
-				sizeof(int) * (block->predecessors_count - old_pred_idx - 1)
-			);
+			if (phi->pi >= 0) {
+				if (phi->pi == old_pred || phi->pi == new_pred) {
+					zend_ssa_rename_var_uses(
+						ssa, phi->ssa_var, phi->sources[0], /* update_types */ 0);
+					zend_ssa_remove_phi(ssa, phi);
+				}
+			} else {
+				memmove(
+					phi->sources + old_pred_idx,
+					phi->sources + old_pred_idx + 1,
+					sizeof(int) * (block->predecessors_count - old_pred_idx - 1)
+				);
+			}
 		}
 
 		block->predecessors_count--;
@@ -666,13 +701,32 @@ static void zend_ssa_unlink_block(zend_op_array *op_array, zend_ssa *ssa, zend_b
 {
 	if (block->predecessors_count == 1 && ssa->blocks[block_num].phis == NULL) {
 		int *predecessors, i;
+		zend_basic_block *fe_fetch_block = NULL;
 
 		ZEND_ASSERT(block->successors_count == 1);
 		predecessors = &ssa->cfg.predecessors[block->predecessor_offset];
+		if (block->predecessors_count == 1 && (block->flags & ZEND_BB_FOLLOW)) {
+			zend_basic_block *pred_block = &ssa->cfg.blocks[predecessors[0]];
+
+			if (pred_block->len > 0 && (pred_block->flags & ZEND_BB_REACHABLE)) {
+				if ((op_array->opcodes[pred_block->start + pred_block->len - 1].opcode == ZEND_FE_FETCH_R
+				 || op_array->opcodes[pred_block->start + pred_block->len - 1].opcode == ZEND_FE_FETCH_RW)
+				  && op_array->opcodes[pred_block->start + pred_block->len - 1].op2_type == IS_CV) {
+					fe_fetch_block = pred_block;
+			    }
+			}
+		}
 		for (i = 0; i < block->predecessors_count; i++) {
 			zend_ssa_replace_control_link(op_array, ssa, predecessors[i], block_num, block->successors[0]);
 		}
 		zend_ssa_remove_block(op_array, ssa, block_num);
+		if (fe_fetch_block && fe_fetch_block->successors[0] == fe_fetch_block->successors[1]) {
+			/* The body of "foreach" loop was removed */
+			int ssa_var = ssa->ops[fe_fetch_block->start + fe_fetch_block->len - 1].op2_def;
+			if (ssa_var >= 0) {
+				zend_ssa_remove_uses_of_var(ssa, ssa_var);
+			}
+		}
 	}
 }
 
@@ -704,9 +758,13 @@ static int zend_dfa_optimize_jmps(zend_op_array *op_array, zend_ssa *ssa)
 		uint32_t op_num;
 		zend_op *opline;
 		zend_ssa_op *ssa_op;
+		zend_bool can_follow = 1;
 
 		while (next_block_num < ssa->cfg.blocks_count
 			&& !(ssa->cfg.blocks[next_block_num].flags & ZEND_BB_REACHABLE)) {
+			if (ssa->cfg.blocks[next_block_num].flags & ZEND_BB_UNREACHABLE_FREE) {
+				can_follow = 0;
+			}
 			next_block_num++;
 		}
 
@@ -718,7 +776,7 @@ static int zend_dfa_optimize_jmps(zend_op_array *op_array, zend_ssa *ssa)
 			switch (opline->opcode) {
 				case ZEND_JMP:
 optimize_jmp:
-					if (block->successors[0] == next_block_num) {
+					if (block->successors[0] == next_block_num && can_follow) {
 						MAKE_NOP(opline);
 						removed_ops++;
 						goto optimize_nop;
@@ -739,7 +797,7 @@ optimize_jmpz:
 							goto optimize_jmp;
 						}
 					} else {
-						if (block->successors[0] == next_block_num) {
+						if (block->successors[0] == next_block_num && can_follow) {
 							take_successor_0(ssa, block_num, block);
 							if (opline->op1_type == IS_CV && (OP1_INFO() & MAY_BE_UNDEF)) {
 								opline->opcode = ZEND_CHECK_VAR;
@@ -770,7 +828,7 @@ optimize_jmpnz:
 							goto optimize_nop;
 						}
 					} else if (block->successors_count == 2) {
-						if (block->successors[0] == next_block_num) {
+						if (block->successors[0] == next_block_num && can_follow) {
 							take_successor_0(ssa, block_num, block);
 							if (opline->op1_type == IS_CV && (OP1_INFO() & MAY_BE_UNDEF)) {
 								opline->opcode = ZEND_CHECK_VAR;
@@ -804,7 +862,7 @@ optimize_jmpnz:
 					} else if (block->successors_count == 2) {
 						if (block->successors[0] == block->successors[1]) {
 							take_successor_0(ssa, block_num, block);
-							if (block->successors[0] == next_block_num) {
+							if (block->successors[0] == next_block_num && can_follow) {
 								if (opline->op1_type == IS_CV && (OP1_INFO() & MAY_BE_UNDEF)) {
 									opline->opcode = ZEND_CHECK_VAR;
 									opline->op2.num = 0;
@@ -1002,7 +1060,8 @@ static int zend_dfa_try_to_replace_result(zend_op_array *op_array, zend_ssa *ssa
 		 && op_array->opcodes[use].opcode != ZEND_FREE
 		 && op_array->opcodes[use].opcode != ZEND_SEND_VAL
 		 && op_array->opcodes[use].opcode != ZEND_SEND_VAL_EX
-		 && op_array->opcodes[use].opcode != ZEND_VERIFY_RETURN_TYPE) {
+		 && op_array->opcodes[use].opcode != ZEND_VERIFY_RETURN_TYPE
+		 && op_array->opcodes[use].opcode != ZEND_YIELD) {
 			if (use > def) {
 				int i = use;
 				const zend_op *opline = &op_array->opcodes[use];
@@ -1279,8 +1338,10 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
 				 && !ssa->vars[src_var].phi_use_chain
 				 && !ssa->vars[src_var].sym_use_chain
 				 && opline_supports_assign_contraction(
-					 ssa, &op_array->opcodes[ssa->vars[src_var].definition],
+					 op_array, ssa, &op_array->opcodes[ssa->vars[src_var].definition],
 					 src_var, opline->result.var)
+				 && !variable_defined_or_used_in_range(ssa, EX_VAR_TO_NUM(opline->result.var),
+						ssa->vars[src_var].definition+1, op_1)
 				) {
 
 					int orig_var = ssa->ops[op_1].result_use;
@@ -1388,7 +1449,7 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
 					 && (ssa->var_info[result_var].type & ((MAY_BE_ANY|MAY_BE_REF|MAY_BE_UNDEF) - (MAY_BE_LONG|MAY_BE_DOUBLE))) == 0) {
 						int use = ssa->vars[result_var].use_chain;
 
-						if (op_array->opcodes[use].opcode == ZEND_IS_SMALLER
+						if (use >= 0 && op_array->opcodes[use].opcode == ZEND_IS_SMALLER
 						 && ssa->ops[use].op1_use == result_var
 						 && zend_dfa_try_to_replace_result(op_array, ssa, op_1, v)) {
 							opline->opcode = ZEND_PRE_INC;
@@ -1402,7 +1463,7 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
 					 && (ssa->var_info[result_var].type & ((MAY_BE_ANY|MAY_BE_REF|MAY_BE_UNDEF) - (MAY_BE_LONG|MAY_BE_DOUBLE))) == 0) {
 						int use = ssa->vars[result_var].use_chain;
 
-						if (op_array->opcodes[use].opcode == ZEND_IS_SMALLER
+						if (use >= 0 && op_array->opcodes[use].opcode == ZEND_IS_SMALLER
 						 && ssa->ops[use].op2_use == result_var
 						 && zend_dfa_try_to_replace_result(op_array, ssa, op_1, v)) {
 							opline->opcode = ZEND_PRE_DEC;
@@ -1434,8 +1495,10 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
 					 && !ssa->vars[src_var].phi_use_chain
 					 && !ssa->vars[src_var].sym_use_chain
 					 && opline_supports_assign_contraction(
-						 ssa, &op_array->opcodes[ssa->vars[src_var].definition],
+						 op_array, ssa, &op_array->opcodes[ssa->vars[src_var].definition],
 						 src_var, opline->op1.var)
+					 && !variable_defined_or_used_in_range(ssa, EX_VAR_TO_NUM(opline->op1.var),
+							ssa->vars[src_var].definition+1, op_1)
 					) {
 
 						int op_2 = ssa->vars[src_var].definition;

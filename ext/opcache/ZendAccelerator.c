@@ -2195,6 +2195,9 @@ zend_op_array *persistent_compile_file(zend_file_handle *file_handle, int type)
 				zend_hash_index_del(EG(zend_constants), new_const_num);
 			}
 		}
+		persistent_script->dynamic_members.last_used = ZCG(request_time);
+		SHM_PROTECT();
+		HANDLE_UNBLOCK_INTERRUPTIONS();
 	} else {
 
 #if !ZEND_WIN32
@@ -2211,9 +2214,10 @@ zend_op_array *persistent_compile_file(zend_file_handle *file_handle, int type)
 
 		/* see bug #15471 (old BTS) */
 		if (persistent_script->script.filename) {
-			if (!EG(current_execute_data) || !EG(current_execute_data)->opline ||
+			if (!EG(current_execute_data) ||
 			    !EG(current_execute_data)->func ||
 			    !ZEND_USER_CODE(EG(current_execute_data)->func->common.type) ||
+			    !EG(current_execute_data)->opline ||
 			    EG(current_execute_data)->opline->opcode != ZEND_INCLUDE_OR_EVAL ||
 			    (EG(current_execute_data)->opline->extended_value != ZEND_INCLUDE_ONCE &&
 			     EG(current_execute_data)->opline->extended_value != ZEND_REQUIRE_ONCE)) {
@@ -2231,15 +2235,15 @@ zend_op_array *persistent_compile_file(zend_file_handle *file_handle, int type)
 				}
 			}
 		}
+
+		persistent_script->dynamic_members.last_used = ZCG(request_time);
+		SHM_PROTECT();
+		HANDLE_UNBLOCK_INTERRUPTIONS();
+
 		replay_warnings(persistent_script);
 		zend_file_handle_dtor(file_handle);
 		from_shared_memory = 1;
 	}
-
-	persistent_script->dynamic_members.last_used = ZCG(request_time);
-
-	SHM_PROTECT();
-	HANDLE_UNBLOCK_INTERRUPTIONS();
 
     /* Fetch jit auto globals used in the script before execution */
     if (persistent_script->ping_auto_globals_mask) {
@@ -2803,11 +2807,11 @@ static void accel_move_code_to_huge_pages(void)
 	f = fopen("/proc/self/maps", "r");
 	if (f) {
 		long unsigned int  start, end, offset, inode;
-		char perm[5], dev[6], name[MAXPATHLEN];
+		char perm[5], dev[10], name[MAXPATHLEN];
 		int ret;
 
 		while (1) {
-			ret = fscanf(f, "%lx-%lx %4s %lx %5s %ld %s\n", &start, &end, perm, &offset, dev, &inode, name);
+			ret = fscanf(f, "%lx-%lx %4s %lx %9s %ld %s\n", &start, &end, perm, &offset, dev, &inode, name);
 			if (ret == 7) {
 				if (perm[0] == 'r' && perm[1] == '-' && perm[2] == 'x' && name[0] == '/') {
 					long unsigned int  seg_start = ZEND_MM_ALIGNED_SIZE_EX(start, huge_page_size);
@@ -3008,7 +3012,7 @@ static zend_result accel_post_startup(void)
 				zend_accel_error(ACCEL_LOG_FATAL, "Failure to initialize shared memory structures - probably not enough shared memory.");
 				return SUCCESS;
 			case SUCCESSFULLY_REATTACHED:
-#if defined(HAVE_JIT) && !defined(ZEND_WIN32)
+#ifdef HAVE_JIT
 				reattached = 1;
 #endif
 				zend_shared_alloc_lock();
@@ -4075,7 +4079,8 @@ static void preload_remove_empty_includes(void)
 					if (opline->opcode == ZEND_INCLUDE_OR_EVAL &&
 					    opline->extended_value != ZEND_EVAL &&
 					    opline->op1_type == IS_CONST &&
-					    Z_TYPE_P(RT_CONSTANT(opline, opline->op1)) == IS_STRING) {
+					    Z_TYPE_P(RT_CONSTANT(opline, opline->op1)) == IS_STRING &&
+					    opline->result_type == IS_UNUSED) {
 
 						zend_string *resolved_path = preload_resolve_path(Z_STR_P(RT_CONSTANT(opline, opline->op1)));
 
@@ -4121,7 +4126,7 @@ static void preload_remove_empty_includes(void)
 
 				if (resolved_path) {
 					zend_persistent_script *incl = zend_hash_find_ptr(preload_scripts, resolved_path);
-					if (incl && incl->empty) {
+					if (incl && incl->empty && opline->result_type == IS_UNUSED) {
 						MAKE_NOP(opline);
 					} else {
 						if (!IS_ABSOLUTE_PATH(Z_STRVAL_P(RT_CONSTANT(opline, opline->op1)), Z_STRLEN_P(RT_CONSTANT(opline, opline->op1)))) {
@@ -4599,6 +4604,20 @@ static int accel_preload(const char *config, zend_bool in_child)
 			}
 		} ZEND_HASH_FOREACH_END();
 
+		if (Z_TYPE(EG(user_error_handler)) != IS_UNDEF) {
+			zval_ptr_dtor(&EG(user_error_handler));
+			ZVAL_UNDEF(&EG(user_error_handler));
+		}
+
+		if (Z_TYPE(EG(user_exception_handler)) != IS_UNDEF) {
+			zval_ptr_dtor(&EG(user_exception_handler));
+			ZVAL_UNDEF(&EG(user_exception_handler));
+		}
+
+		zend_stack_clean(&EG(user_error_handlers_error_reporting), NULL, 1);
+		zend_stack_clean(&EG(user_error_handlers), (void (*)(void *))ZVAL_PTR_DTOR, 1);
+		zend_stack_clean(&EG(user_exception_handlers), (void (*)(void *))ZVAL_PTR_DTOR, 1);
+
 		CG(map_ptr_last) = orig_map_ptr_last;
 
 		if (EG(full_tables_cleanup)) {
@@ -4927,6 +4946,7 @@ static int accel_finish_startup(void)
 			if (accel_preload(ZCG(accel_directives).preload, in_child) != SUCCESS) {
 				ret = FAILURE;
 			}
+			preload_flush(NULL);
 
 			orig_report_memleaks = PG(report_memleaks);
 			PG(report_memleaks) = 0;

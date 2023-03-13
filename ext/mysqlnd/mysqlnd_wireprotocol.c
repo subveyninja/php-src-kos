@@ -41,6 +41,8 @@ const char mysqlnd_read_body_name[]		= "mysqlnd_read_body";
 #define ERROR_MARKER 0xFF
 #define EODATA_MARKER 0xFE
 
+#define MARIADB_RPL_VERSION_HACK "5.5.5-"
+
 /* {{{ mysqlnd_command_to_text */
 const char * const mysqlnd_command_to_text[COM_END] =
 {
@@ -299,6 +301,7 @@ mysqlnd_read_packet_header_and_body(MYSQLND_PACKET_HEADER * packet_header,
 	if (buf_size < packet_header->size) {
 		DBG_ERR_FMT("Packet buffer %u wasn't big enough %u, %u bytes will be unread",
 					buf_size, packet_header->size, packet_header->size - buf_size);
+		SET_CLIENT_ERROR(error_info, CR_INVALID_BUFFER_USE, UNKNOWN_SQLSTATE, "Packet buffer wasn't big enough; as a workaround consider increasing value of net_cmd_buffer_size");
 		DBG_RETURN(FAIL);
 	}
 	if (FAIL == pfc->data->m.receive(pfc, vio, buf, packet_header->size, stats, error_info)) {
@@ -367,6 +370,12 @@ php_mysqlnd_greet_read(MYSQLND_CONN_DATA * conn, void * _packet)
 			memcpy(packet->sqlstate, "08004", MYSQLND_SQLSTATE_LENGTH);
 		}
 		DBG_RETURN(PASS);
+	}
+
+	/* MariaDB always sends 5.5.5 before version string: 5.5.5 was never released,
+		so just ignore it */
+	if (!strncmp((char *) p, MARIADB_RPL_VERSION_HACK, sizeof(MARIADB_RPL_VERSION_HACK) - 1)) {
+		p += sizeof(MARIADB_RPL_VERSION_HACK) - 1;
 	}
 
 	packet->server_version = estrdup((char *)p);
@@ -768,7 +777,8 @@ php_mysqlnd_change_auth_response_write(MYSQLND_CONN_DATA * conn, void * _packet)
 	MYSQLND_VIO * vio = conn->vio;
 	MYSQLND_STATS * stats = conn->stats;
 	MYSQLND_CONNECTION_STATE * connection_state = &conn->state;
-	zend_uchar * const buffer = pfc->cmd_buffer.length >= packet->auth_data_len? pfc->cmd_buffer.buffer : mnd_emalloc(packet->auth_data_len);
+	size_t total_packet_size = packet->auth_data_len + MYSQLND_HEADER_SIZE;
+	zend_uchar * const buffer = pfc->cmd_buffer.length >= total_packet_size? pfc->cmd_buffer.buffer : mnd_emalloc(total_packet_size);
 	zend_uchar * p = buffer + MYSQLND_HEADER_SIZE; /* start after the header */
 
 	DBG_ENTER("php_mysqlnd_change_auth_response_write");
@@ -1634,9 +1644,9 @@ php_mysqlnd_rowp_read_text_protocol_aux(MYSQLND_ROW_BUFFER * row_buffer, zval * 
 				} else {
 					uint64_t v =
 #ifndef PHP_WIN32
-						(uint64_t) atoll((char *) p);
+						strtoull((char *) p, NULL, 10);
 #else
-						(uint64_t) _atoi64((char *) p);
+						_strtoui64((char *) p, NULL, 10);
 #endif
 					zend_bool uns = fields_metadata[i].flags & UNSIGNED_FLAG? TRUE:FALSE;
 					/* We have to make it ASCIIZ temporarily */

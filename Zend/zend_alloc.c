@@ -2303,10 +2303,10 @@ void zend_mm_shutdown(zend_mm_heap *heap, bool full, bool silent)
 #endif
 		memset(heap->free_slot, 0, sizeof(heap->free_slot));
 #if ZEND_MM_STAT || ZEND_MM_LIMIT
-		heap->real_size = ZEND_MM_CHUNK_SIZE;
+		heap->real_size = (heap->cached_chunks_count + 1) * ZEND_MM_CHUNK_SIZE;
 #endif
 #if ZEND_MM_STAT
-		heap->real_peak = ZEND_MM_CHUNK_SIZE;
+		heap->real_peak = (heap->cached_chunks_count + 1) * ZEND_MM_CHUNK_SIZE;
 #endif
 		heap->chunks_count = 1;
 		heap->peak_chunks_count = 1;
@@ -2660,10 +2660,23 @@ ZEND_API char* ZEND_FASTCALL zend_strndup(const char *s, size_t length)
 ZEND_API zend_result zend_set_memory_limit_ex(size_t memory_limit)
 {
 #if ZEND_MM_LIMIT
+	zend_mm_heap *heap = AG(mm_heap);
+
 	if (memory_limit < ZEND_MM_CHUNK_SIZE) {
 		memory_limit = ZEND_MM_CHUNK_SIZE;
 	}
-	if (UNEXPECTED(memory_limit < AG(mm_heap)->real_size)) {
+	if (UNEXPECTED(memory_limit < heap->real_size)) {
+		if (memory_limit >= heap->real_size - heap->cached_chunks_count * ZEND_MM_CHUNK_SIZE) {
+			/* free some cached chunks to fit into new memory limit */
+			do {
+				zend_mm_chunk *p = heap->cached_chunks;
+				heap->cached_chunks = p->next;
+				zend_mm_chunk_free(heap, p, ZEND_MM_CHUNK_SIZE);
+				heap->cached_chunks_count--;
+				heap->real_size -= ZEND_MM_CHUNK_SIZE;
+			} while (memory_limit < heap->real_size);
+			return SUCCESS;
+		}
 		return FAILURE;
 	}
 	AG(mm_heap)->limit = memory_limit;

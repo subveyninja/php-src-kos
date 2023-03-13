@@ -153,6 +153,11 @@ ZEND_API void zend_function_dtor(zval *zv)
 		/* For methods this will be called explicitly. */
 		if (!function->common.scope) {
 			zend_free_internal_arg_info(&function->internal_function);
+
+			if (function->common.attributes) {
+				zend_hash_release(function->common.attributes);
+				function->common.attributes = NULL;
+			}
 		}
 
 		if (!(function->common.fn_flags & ZEND_ACC_ARENA_ALLOCATED)) {
@@ -394,11 +399,17 @@ ZEND_API void destroy_zend_class(zval *zv)
 			zend_hash_destroy(&ce->properties_info);
 			zend_string_release_ex(ce->name, 1);
 
-			/* TODO: eliminate this loop for classes without functions with arg_info */
+			/* TODO: eliminate this loop for classes without functions with arg_info / attributes */
 			ZEND_HASH_FOREACH_PTR(&ce->function_table, fn) {
-				if ((fn->common.fn_flags & (ZEND_ACC_HAS_RETURN_TYPE|ZEND_ACC_HAS_TYPE_HINTS)) &&
-				    fn->common.scope == ce) {
-					zend_free_internal_arg_info(&fn->internal_function);
+				if (fn->common.scope == ce) {
+					if (fn->common.fn_flags & (ZEND_ACC_HAS_RETURN_TYPE|ZEND_ACC_HAS_TYPE_HINTS)) {
+						zend_free_internal_arg_info(&fn->internal_function);
+					}
+
+					if (fn->common.attributes) {
+						zend_hash_release(fn->common.attributes);
+						fn->common.attributes = NULL;
+					}
 				}
 			} ZEND_HASH_FOREACH_END();
 
@@ -721,17 +732,23 @@ static void emit_live_range(
 			 * "null" branch, and another from the start of the "non-null" branch to the
 			 * FREE opcode. */
 			uint32_t rt_var_num = EX_NUM_TO_VAR(op_array->last_var + var_num);
-			zend_op *block_start_op = use_opline;
-
 			if (needs_live_range && !needs_live_range(op_array, orig_def_opline)) {
 				return;
 			}
 
+			kind = ZEND_LIVE_TMPVAR;
+			if (use_opline->opcode != ZEND_FREE) {
+				/* This can happen if one branch of the coalesce has been optimized away.
+				 * In this case we should emit a normal live-range instead. */
+				start++;
+				break;
+			}
+
+			zend_op *block_start_op = use_opline;
 			while ((block_start_op-1)->opcode == ZEND_FREE) {
 				block_start_op--;
 			}
 
-			kind = ZEND_LIVE_TMPVAR;
 			start = block_start_op - op_array->opcodes;
 			if (start != end) {
 				emit_live_range_raw(op_array, var_num, kind, start, end);
@@ -739,6 +756,12 @@ static void emit_live_range(
 
 			do {
 				use_opline--;
+
+				/* The use might have been optimized away, in which case we will hit the def
+				 * instead. */
+				if (use_opline->opcode == ZEND_COPY_TMP && use_opline->result.var == rt_var_num) {
+					return;
+				}
 			} while (!(
 				((use_opline->op1_type & (IS_TMP_VAR|IS_VAR)) && use_opline->op1.var == rt_var_num) ||
 				((use_opline->op2_type & (IS_TMP_VAR|IS_VAR)) && use_opline->op2.var == rt_var_num)
@@ -767,13 +790,13 @@ static zend_bool keeps_op1_alive(zend_op *opline) {
 	if (opline->opcode == ZEND_CASE
 	 || opline->opcode == ZEND_CASE_STRICT
 	 || opline->opcode == ZEND_SWITCH_LONG
+	 || opline->opcode == ZEND_SWITCH_STRING
 	 || opline->opcode == ZEND_MATCH
 	 || opline->opcode == ZEND_FETCH_LIST_R
 	 || opline->opcode == ZEND_COPY_TMP) {
 		return 1;
 	}
-	ZEND_ASSERT(opline->opcode != ZEND_SWITCH_STRING
-		&& opline->opcode != ZEND_FE_FETCH_R
+	ZEND_ASSERT(opline->opcode != ZEND_FE_FETCH_R
 		&& opline->opcode != ZEND_FE_FETCH_RW
 		&& opline->opcode != ZEND_FETCH_LIST_W
 		&& opline->opcode != ZEND_VERIFY_RETURN_TYPE

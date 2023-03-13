@@ -335,10 +335,6 @@ static void place_essa_pis(
 
 					if (Z_TYPE_P(zv) == IS_LONG) {
 						add_val2 = Z_LVAL_P(zv);
-					} else if (Z_TYPE_P(zv) == IS_FALSE) {
-						add_val2 = 0;
-					} else if (Z_TYPE_P(zv) == IS_TRUE) {
-						add_val2 = 1;
 					} else {
 						var1 = -1;
 					}
@@ -356,10 +352,6 @@ static void place_essa_pis(
 					zval *zv = CRT_CONSTANT_EX(op_array, (opline-1), (opline-1)->op1);
 					if (Z_TYPE_P(zv) == IS_LONG) {
 						add_val1 = Z_LVAL_P(CRT_CONSTANT_EX(op_array, (opline-1), (opline-1)->op1));
-					} else if (Z_TYPE_P(zv) == IS_FALSE) {
-						add_val1 = 0;
-					} else if (Z_TYPE_P(zv) == IS_TRUE) {
-						add_val1 = 1;
 					} else {
 						var2 = -1;
 					}
@@ -601,6 +593,12 @@ add_op1_def:
 			break;
 		case ZEND_ASSIGN_DIM:
 		case ZEND_ASSIGN_OBJ:
+			if (opline->op1_type == IS_CV) {
+				ssa_ops[k].op1_def = ssa_vars_count;
+				var[EX_VAR_TO_NUM(opline->op1.var)] = ssa_vars_count;
+				ssa_vars_count++;
+				//NEW_SSA_VAR(opline->op1.var)
+			}
 			next = opline + 1;
 			if (next->op1_type & (IS_CV|IS_VAR|IS_TMP_VAR)) {
 				ssa_ops[k + 1].op1_use = var[EX_VAR_TO_NUM(next->op1.var)];
@@ -612,11 +610,14 @@ add_op1_def:
 					//NEW_SSA_VAR(next->op1.var)
 				}
 			}
-			if (opline->op1_type == IS_CV) {
-				goto add_op1_def;
-			}
 			break;
 		case ZEND_ASSIGN_OBJ_REF:
+			if (opline->op1_type == IS_CV) {
+				ssa_ops[k].op1_def = ssa_vars_count;
+				var[EX_VAR_TO_NUM(opline->op1.var)] = ssa_vars_count;
+				ssa_vars_count++;
+				//NEW_SSA_VAR(opline->op1.var)
+			}
 			next = opline + 1;
 			if (next->op1_type & (IS_CV|IS_VAR|IS_TMP_VAR)) {
 				ssa_ops[k + 1].op1_use = var[EX_VAR_TO_NUM(next->op1.var)];
@@ -627,9 +628,6 @@ add_op1_def:
 					ssa_vars_count++;
 					//NEW_SSA_VAR(next->op1.var)
 				}
-			}
-			if (opline->op1_type == IS_CV) {
-				goto add_op1_def;
 			}
 			break;
 		case ZEND_ASSIGN_STATIC_PROP:
@@ -667,13 +665,16 @@ add_op1_def:
 			break;
 		case ZEND_ASSIGN_DIM_OP:
 		case ZEND_ASSIGN_OBJ_OP:
+			if (opline->op1_type == IS_CV) {
+				ssa_ops[k].op1_def = ssa_vars_count;
+				var[EX_VAR_TO_NUM(opline->op1.var)] = ssa_vars_count;
+				ssa_vars_count++;
+				//NEW_SSA_VAR(opline->op1.var)
+			}
 			next = opline + 1;
 			if (next->op1_type & (IS_CV|IS_VAR|IS_TMP_VAR)) {
 				ssa_ops[k + 1].op1_use = var[EX_VAR_TO_NUM(next->op1.var)];
 				//USE_SSA_VAR(op_array->last_var + next->op1.var);
-			}
-			if (opline->op1_type == IS_CV) {
-				goto add_op1_def;
 			}
 			break;
 		case ZEND_ASSIGN_OP:
@@ -759,6 +760,14 @@ add_op1_def:
 				var[EX_VAR_TO_NUM(opline->op2.var)] = ssa_vars_count;
 				ssa_vars_count++;
 				//NEW_SSA_VAR(opline->op2.var)
+			}
+			break;
+		case ZEND_COPY_TMP:
+			if (build_flags & ZEND_SSA_RC_INFERENCE) {
+				ssa_ops[k].op1_def = ssa_vars_count;
+				var[EX_VAR_TO_NUM(opline->op1.var)] = ssa_vars_count;
+				ssa_vars_count++;
+				//NEW_SSA_VAR(opline->op1.var)
 			}
 			break;
 		default:

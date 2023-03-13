@@ -1207,7 +1207,8 @@ zend_string *zend_type_to_string_resolved(zend_type type, zend_class_entry *scop
 	}
 	if (type_mask & MAY_BE_STATIC) {
 		zend_string *name = ZSTR_KNOWN(ZEND_STR_STATIC);
-		if (scope) {
+		// During compilation of eval'd code the called scope refers to the scope calling the eval
+		if (scope && !zend_is_compiling()) {
 			zend_class_entry *called_scope = zend_get_called_scope(EG(current_execute_data));
 			if (called_scope) {
 				name = called_scope->name;
@@ -3213,17 +3214,13 @@ void zend_compile_assign_ref(znode *result, zend_ast *ast) /* {{{ */
 		opline->extended_value &= ~ZEND_FETCH_REF;
 		opline->extended_value |= flags;
 		zend_emit_op_data(&source_node);
-		if (result != NULL) {
-			*result = target_node;
-		}
+		*result = target_node;
 	} else if (opline && opline->opcode == ZEND_FETCH_STATIC_PROP_W) {
 		opline->opcode = ZEND_ASSIGN_STATIC_PROP_REF;
 		opline->extended_value &= ~ZEND_FETCH_REF;
 		opline->extended_value |= flags;
 		zend_emit_op_data(&source_node);
-		if (result != NULL) {
-			*result = target_node;
-		}
+		*result = target_node;
 	} else {
 		opline = zend_emit_op(result, ZEND_ASSIGN_REF, &target_node, &source_node);
 		opline->extended_value = flags;
@@ -3233,9 +3230,11 @@ void zend_compile_assign_ref(znode *result, zend_ast *ast) /* {{{ */
 
 static inline void zend_emit_assign_ref_znode(zend_ast *var_ast, znode *value_node) /* {{{ */
 {
+	znode dummy_node;
 	zend_ast *assign_ast = zend_ast_create(ZEND_AST_ASSIGN_REF, var_ast,
 		zend_ast_create_znode(value_node));
-	zend_compile_expr(NULL, assign_ast);
+	zend_compile_expr(&dummy_node, assign_ast);
+	zend_do_free(&dummy_node);
 }
 /* }}} */
 
@@ -3862,6 +3861,7 @@ static void zend_compile_init_user_func(zend_ast *name_ast, uint32_t num_args, z
 zend_result zend_compile_func_cufa(znode *result, zend_ast_list *args, zend_string *lcname) /* {{{ */
 {
 	znode arg_node;
+	zend_op *opline;
 
 	if (args->children != 2) {
 		return FAILURE;
@@ -3903,7 +3903,8 @@ zend_result zend_compile_func_cufa(znode *result, zend_ast_list *args, zend_stri
 	zend_compile_expr(&arg_node, args->child[1]);
 	zend_emit_op(NULL, ZEND_SEND_ARRAY, &arg_node, NULL);
 	zend_emit_op(NULL, ZEND_CHECK_UNDEF_ARGS, NULL, NULL);
-	zend_emit_op(result, ZEND_DO_FCALL, NULL, NULL);
+	opline = zend_emit_op(result, ZEND_DO_FCALL, NULL, NULL);
+	opline->extended_value = ZEND_FCALL_MAY_HAVE_EXTRA_NAMED_PARAMS;
 
 	return SUCCESS;
 }
@@ -5231,6 +5232,12 @@ void zend_compile_if(zend_ast *ast) /* {{{ */
 		if (cond_ast) {
 			znode cond_node;
 			uint32_t opnum_jmpz;
+
+			if (i > 0) {
+				CG(zend_lineno) = cond_ast->lineno;
+				zend_do_extended_stmt();
+			}
+
 			zend_compile_expr(&cond_node, cond_ast);
 			opnum_jmpz = zend_emit_cond_jump(ZEND_JMPZ, &cond_node, 0);
 
@@ -6819,7 +6826,8 @@ zend_string *zend_begin_method_decl(zend_op_array *op_array, zend_string *name, 
 	}
 
 	zend_add_magic_method(ce, (zend_function *) op_array, lcname);
-	if (zend_string_equals_literal(lcname, ZEND_TOSTRING_FUNC_NAME)) {
+	if (zend_string_equals_literal(lcname, ZEND_TOSTRING_FUNC_NAME)
+			&& !(ce->ce_flags & ZEND_ACC_TRAIT)) {
 		add_stringable_interface(ce);
 	}
 
@@ -8512,7 +8520,20 @@ void zend_compile_assign_coalesce(znode *result, zend_ast *ast) /* {{{ */
 	zend_emit_op_tmp(result, ZEND_COALESCE, &var_node_is, NULL);
 
 	CG(memoize_mode) = ZEND_MEMOIZE_NONE;
-	zend_compile_expr(&default_node, default_ast);
+	if (var_ast->kind == ZEND_AST_DIM
+	 && zend_is_assign_to_self(var_ast, default_ast)
+	 && !is_this_fetch(default_ast)) {
+		/* $a[0] = $a should evaluate the right $a first */
+		znode cv_node;
+
+		if (zend_try_compile_cv(&cv_node, default_ast) == FAILURE) {
+			zend_compile_simple_var_no_cv(&default_node, default_ast, BP_VAR_R, 0);
+		} else {
+			zend_emit_op_tmp(&default_node, ZEND_QM_ASSIGN, &cv_node, NULL);
+		}
+	} else {
+		zend_compile_expr(&default_node, default_ast);
+	}
 
 	CG(memoize_mode) = ZEND_MEMOIZE_FETCH;
 	zend_compile_var(&var_node_w, var_ast, BP_VAR_W, 0);

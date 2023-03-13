@@ -431,16 +431,21 @@ int fpm_unix_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 		new_con = malloc(strlen(con) + strlen(wp->config->apparmor_hat) + 3); // // + 0 Byte
 		if (!new_con) {
 			zlog(ZLOG_SYSERROR, "[pool %s] failed to allocate memory for apparmor hat change.", wp->config->name);
+			free(con);
 			return -1;
 		}
 
 		if (0 > sprintf(new_con, "%s//%s", con, wp->config->apparmor_hat)) {
 			zlog(ZLOG_SYSERROR, "[pool %s] failed to construct apparmor confinement.", wp->config->name);
+			free(con);
+			free(new_con);
 			return -1;
 		}
 
 		if (0 > aa_change_profile(new_con)) {
 			zlog(ZLOG_SYSERROR, "[pool %s] failed to change to new confinement (%s). Please check if \"/proc/*/attr/current\" is read and writeable and \"change_profile -> %s//*\" is allowed.", wp->config->name, new_con, con);
+			free(con);
+			free(new_con);
 			return -1;
 		}
 
@@ -453,7 +458,7 @@ int fpm_unix_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_unix_init_main() /* {{{ */
+int fpm_unix_init_main(void)
 {
 	struct fpm_worker_pool_s *wp;
 	int is_root = !geteuid();
@@ -592,4 +597,3 @@ int fpm_unix_init_main() /* {{{ */
 
 	return 0;
 }
-/* }}} */

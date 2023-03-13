@@ -157,16 +157,29 @@ int32_t grapheme_strpos_utf16(char *haystack, size_t haystack_len, char *needle,
 			goto finish;
 		}
 		status = U_ZERO_ERROR;
-		usearch_setOffset(src, offset_pos, &status);
+		usearch_setOffset(src, last ? 0 : offset_pos, &status);
 		STRPOS_CHECK_STATUS(status, "Invalid search offset");
 	}
 
 
 	if(last) {
-		char_pos = usearch_last(src, &status);
-		if(char_pos < offset_pos) {
-			/* last one is beyound our start offset */
-			char_pos = USEARCH_DONE;
+		if (offset >= 0) {
+			char_pos = usearch_last(src, &status);
+			if(char_pos < offset_pos) {
+				/* last one is beyond our start offset */
+				char_pos = USEARCH_DONE;
+			}			
+		} else {
+			/* searching backwards is broken, so we search forwards, albeit it's less efficient */
+			int32_t prev_pos = USEARCH_DONE;
+			do {
+				char_pos = usearch_next(src, &status);
+				if (char_pos == USEARCH_DONE || char_pos > offset_pos) {
+					char_pos = prev_pos;
+					break;
+				}
+				prev_pos = char_pos;
+			} while(1);
 		}
 	} else {
 		char_pos = usearch_next(src, &status);
@@ -360,8 +373,6 @@ grapheme_strrpos_ascii(char *haystack, size_t haystack_len, char *needle, size_t
 /* {{{ grapheme_get_break_iterator: get a clone of the global character break iterator */
 UBreakIterator* grapheme_get_break_iterator(void *stack_buffer, UErrorCode *status )
 {
-	int32_t buffer_size;
-
 	UBreakIterator *global_break_iterator = INTL_G( grapheme_iterator );
 
 	if ( NULL == global_break_iterator ) {
@@ -375,8 +386,12 @@ UBreakIterator* grapheme_get_break_iterator(void *stack_buffer, UErrorCode *stat
 		INTL_G(grapheme_iterator) = global_break_iterator;
 	}
 
-	buffer_size = U_BRK_SAFECLONE_BUFFERSIZE;
+#if U_ICU_VERSION_MAJOR_NUM >= 69
+	return ubrk_clone(global_break_iterator, status);
+#else
+	int32_t buffer_size = U_BRK_SAFECLONE_BUFFERSIZE;
 
 	return ubrk_safeClone(global_break_iterator, stack_buffer, &buffer_size, status);
+#endif
 }
 /* }}} */

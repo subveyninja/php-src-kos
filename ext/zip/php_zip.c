@@ -90,8 +90,8 @@ static char * php_zip_make_relative_path(char *path, size_t path_len) /* {{{ */
 		return NULL;
 	}
 
-	if (IS_SLASH(path[0])) {
-		return path + 1;
+	if (IS_ABSOLUTE_PATH(path, path_len)) {
+		return path + COPY_WHEN_ABSOLUTE(path) + 1;
 	}
 
 	i = path_len;
@@ -105,8 +105,8 @@ static char * php_zip_make_relative_path(char *path, size_t path_len) /* {{{ */
 			return path;
 		}
 
-		if (i >= 2 && (path[i -1] == '.' || path[i -1] == ':')) {
-			/* i is the position of . or :, add 1 for / */
+		if (i >= 2 && path[i -1] == '.') {
+			/* i is the position of ., add 1 for / */
 			path_begin = path + i + 1;
 			break;
 		}
@@ -149,11 +149,13 @@ static int php_zip_extract_file(struct zip * za, char *dest, char *file, size_t 
 	virtual_file_ex(&new_state, file, NULL, CWD_EXPAND);
 	path_cleaned =  php_zip_make_relative_path(new_state.cwd, new_state.cwd_length);
 	if(!path_cleaned) {
+		CWD_STATE_FREE(new_state.cwd);
 		return 0;
 	}
 	path_cleaned_len = strlen(path_cleaned);
 
 	if (path_cleaned_len >= MAXPATHLEN || zip_stat(za, file, 0, &sb) != 0) {
+		CWD_STATE_FREE(new_state.cwd);
 		return 0;
 	}
 
@@ -188,8 +190,8 @@ static int php_zip_extract_file(struct zip * za, char *dest, char *file, size_t 
 			efree(file_dirname_fullpath);
 			if (!is_dir_only) {
 				zend_string_release_ex(file_basename, 0);
-				CWD_STATE_FREE(new_state.cwd);
 			}
+			CWD_STATE_FREE(new_state.cwd);
 			return 0;
 		}
 	}
@@ -1560,6 +1562,9 @@ PHP_METHOD(ZipArchive, close)
 		ze_obj->err_sys = 0;
 	}
 
+	/* clear cache as empty zip are not created but deleted */
+	php_clear_stat_cache(1, ze_obj->filename, ze_obj->filename_len);
+
 	efree(ze_obj->filename);
 	ze_obj->filename = NULL;
 	ze_obj->filename_len = 0;
@@ -2878,7 +2883,6 @@ PHP_METHOD(ZipArchive, getStream)
 	char *mode = "rb";
 	zend_string *filename;
 	php_stream *stream;
-	ze_zip_object *obj;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "P", &filename) == FAILURE) {
 		RETURN_THROWS();
@@ -2890,9 +2894,7 @@ PHP_METHOD(ZipArchive, getStream)
 		RETURN_FALSE;
 	}
 
-	obj = Z_ZIP_P(self);
-
-	stream = php_stream_zip_open(obj->filename, ZSTR_VAL(filename), mode STREAMS_CC);
+	stream = php_stream_zip_open(intern, ZSTR_VAL(filename), mode STREAMS_CC);
 	if (stream) {
 		php_stream_to_zval(stream, return_value);
 	} else {

@@ -232,6 +232,9 @@ static char *pdo_sqlite_last_insert_id(pdo_dbh_t *dbh, const char *name, size_t 
 /* NB: doesn't handle binary strings... use prepared stmts for that */
 static int sqlite_handle_quoter(pdo_dbh_t *dbh, const char *unquoted, size_t unquotedlen, char **quoted, size_t *quotedlen, enum pdo_param_type paramtype )
 {
+	if (unquotedlen > (INT_MAX - 3) / 2) {
+		return 0;
+	}
 	*quoted = safe_emalloc(2, unquotedlen, 3);
 	sqlite3_snprintf(2*unquotedlen + 3, *quoted, "'%q'", unquoted);
 	*quotedlen = strlen(*quoted);
@@ -715,6 +718,9 @@ static const struct pdo_dbh_methods sqlite_methods = {
 
 static char *make_filename_safe(const char *filename)
 {
+	if (!filename) {
+		return NULL;
+	}
 	if (*filename && memcmp(filename, ":memory:", sizeof(":memory:"))) {
 		char *fullpath = expand_filepath(filename, NULL);
 
@@ -737,7 +743,7 @@ static int authorizer(void *autharg, int access_type, const char *arg3, const ch
 	char *filename;
 	switch (access_type) {
 		case SQLITE_COPY: {
-					filename = make_filename_safe(arg4);
+			filename = make_filename_safe(arg4);
 			if (!filename) {
 				return SQLITE_DENY;
 			}
@@ -746,7 +752,7 @@ static int authorizer(void *autharg, int access_type, const char *arg3, const ch
 		}
 
 		case SQLITE_ATTACH: {
-					filename = make_filename_safe(arg3);
+			filename = make_filename_safe(arg3);
 			if (!filename) {
 				return SQLITE_DENY;
 			}

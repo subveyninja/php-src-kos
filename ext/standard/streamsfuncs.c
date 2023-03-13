@@ -67,10 +67,22 @@ PHP_FUNCTION(stream_socket_pair)
 		RETURN_FALSE;
 	}
 
-	array_init(return_value);
+    s1 = php_stream_sock_open_from_socket(pair[0], 0);
+    if (s1 == NULL) {
+        close(pair[0]);
+        close(pair[1]);
+        php_error_docref(NULL, E_WARNING, "Failed to open stream from socketpair");
+        RETURN_FALSE;        
+    }
+    s2 = php_stream_sock_open_from_socket(pair[1], 0);
+    if (s2 == NULL) {
+        php_stream_free(s1, PHP_STREAM_FREE_CLOSE);
+        close(pair[1]);
+        php_error_docref(NULL, E_WARNING, "Failed to open stream from socketpair");
+        RETURN_FALSE;        
+    }
 
-	s1 = php_stream_sock_open_from_socket(pair[0], 0);
-	s2 = php_stream_sock_open_from_socket(pair[1], 0);
+    array_init(return_value);
 
 	/* set the __exposed flag.
 	 * php_stream_to_zval() does, add_next_index_resource() does not */
@@ -786,7 +798,9 @@ PHP_FUNCTION(stream_select)
 		RETURN_THROWS();
 	}
 
-	PHP_SAFE_MAX_FD(max_fd, max_set_count);
+	if (!PHP_SAFE_MAX_FD(max_fd, max_set_count)) {
+		RETURN_FALSE;
+	}
 
 	/* If seconds is not set to null, build the timeval, else we wait indefinitely */
 	if (!secnull) {
@@ -1017,6 +1031,10 @@ PHP_FUNCTION(stream_context_set_option)
 	} else {
 		if (!optionname) {
 			zend_argument_value_error(3, "cannot be null when argument #2 ($wrapper_or_options) is a string");
+			RETURN_THROWS();
+		}
+		if (!zvalue) {
+			zend_argument_value_error(4, "must be provided when argument #2 ($wrapper_or_options) is a string");
 			RETURN_THROWS();
 		}
 

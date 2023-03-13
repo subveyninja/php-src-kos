@@ -65,10 +65,18 @@ static void fpm_sockets_cleanup(int which, void *arg) /* {{{ */
 			close(ls->sock);
 		} else { /* on PARENT EXEC we want socket fds to be inherited through environment variable */
 			char fd[32];
+			char *tmpenv_value;
 			sprintf(fd, "%d", ls->sock);
 
 			socket_set_buf = (i % FPM_ENV_SOCKET_SET_SIZE == 0 && i) ? 1 : 0;
-			env_value = realloc(env_value, p + (p ? 1 : 0) + strlen(ls->key) + 1 + strlen(fd) + socket_set_buf + 1);
+			tmpenv_value = realloc(env_value, p + (p ? 1 : 0) + strlen(ls->key) + 1 + strlen(fd) + socket_set_buf + 1);
+			if (!tmpenv_value) {
+				zlog(ZLOG_SYSERROR, "failure to inherit data on parent exec for socket `%s` due to memory allocation failure", ls->key);
+				free(ls->key);
+				break;
+			}
+
+			env_value = tmpenv_value;
 
 			if (i % FPM_ENV_SOCKET_SET_SIZE == 0) {
 				socket_set[socket_set_count] = p + socket_set_buf;
@@ -336,6 +344,7 @@ static int fpm_socket_af_inet_listening_socket(struct fpm_worker_pool_s *wp) /* 
 
 	if (port == 0) {
 		zlog(ZLOG_ERROR, "invalid port value '%s'", port_str);
+		free(dup_address);
 		return -1;
 	}
 
@@ -377,7 +386,7 @@ static int fpm_socket_af_unix_listening_socket(struct fpm_worker_pool_s *wp) /* 
 }
 /* }}} */
 
-int fpm_sockets_init_main() /* {{{ */
+int fpm_sockets_init_main(void)
 {
 	unsigned i, lq_len;
 	struct fpm_worker_pool_s *wp;
@@ -476,7 +485,6 @@ int fpm_sockets_init_main() /* {{{ */
 	}
 	return 0;
 }
-/* }}} */
 
 #if HAVE_FPM_LQ
 

@@ -1152,7 +1152,7 @@ static void php_cli_server_log_response(php_cli_server_client *client, int statu
 #endif
 
 	/* basic */
-	spprintf(&basic_buf, 0, "%s [%d]: %s %s", client->addr_str, status, SG(request_info).request_method, client->request.request_uri);
+	spprintf(&basic_buf, 0, "%s [%d]: %s %s", client->addr_str, status, php_http_method_str(client->request.request_method), client->request.request_uri);
 	if (!basic_buf) {
 		return;
 	}
@@ -1569,6 +1569,9 @@ static int php_cli_server_client_read_request_on_path(php_http_parser *parser, c
 	{
 		char *vpath;
 		size_t vpath_len;
+		if (UNEXPECTED(client->request.vpath != NULL)) {
+			return 1;
+		}
 		normalize_vpath(&vpath, &vpath_len, at, length, 1);
 		client->request.vpath = vpath;
 		client->request.vpath_len = vpath_len;
@@ -1579,17 +1582,34 @@ static int php_cli_server_client_read_request_on_path(php_http_parser *parser, c
 static int php_cli_server_client_read_request_on_query_string(php_http_parser *parser, const char *at, size_t length)
 {
 	php_cli_server_client *client = parser->data;
-	client->request.query_string = pestrndup(at, length, 1);
-	client->request.query_string_len = length;
+	if (EXPECTED(client->request.query_string == NULL)) {
+		client->request.query_string = pestrndup(at, length, 1);
+		client->request.query_string_len = length;
+	} else {
+		ZEND_ASSERT(length <= PHP_HTTP_MAX_HEADER_SIZE && PHP_HTTP_MAX_HEADER_SIZE - length >= client->request.query_string_len);
+		client->request.query_string = perealloc(client->request.query_string, client->request.query_string_len + length + 1, 1);
+		memcpy(client->request.query_string + client->request.query_string_len, at, length);
+		client->request.query_string_len += length;
+		client->request.query_string[client->request.query_string_len] = '\0';
+	}
 	return 0;
 }
 
 static int php_cli_server_client_read_request_on_url(php_http_parser *parser, const char *at, size_t length)
 {
 	php_cli_server_client *client = parser->data;
-	client->request.request_method = parser->method;
-	client->request.request_uri = pestrndup(at, length, 1);
-	client->request.request_uri_len = length;
+	if (EXPECTED(client->request.request_uri == NULL)) {
+		client->request.request_method = parser->method;
+		client->request.request_uri = pestrndup(at, length, 1);
+		client->request.request_uri_len = length;
+	} else {
+		ZEND_ASSERT(client->request.request_method == parser->method);
+		ZEND_ASSERT(length <= PHP_HTTP_MAX_HEADER_SIZE && PHP_HTTP_MAX_HEADER_SIZE - length >= client->request.query_string_len);
+		client->request.request_uri = perealloc(client->request.request_uri, client->request.request_uri_len + length + 1, 1);
+		memcpy(client->request.request_uri + client->request.request_uri_len, at, length);
+		client->request.request_uri_len += length;
+		client->request.request_uri[client->request.request_uri_len] = '\0';
+	}
 	return 0;
 }
 
@@ -2279,7 +2299,7 @@ static void php_cli_server_dtor(php_cli_server *server) /* {{{ */
 					  !WIFSIGNALED(php_cli_server_worker_status));
 		}
 
-		free(php_cli_server_workers);
+		pefree(php_cli_server_workers, 1);
 	}
 #endif
 } /* }}} */
@@ -2365,12 +2385,8 @@ static void php_cli_server_startup_workers() {
 	if (php_cli_server_workers_max > 1) {
 		zend_long php_cli_server_worker;
 
-		php_cli_server_workers = calloc(
-			php_cli_server_workers_max, sizeof(pid_t));
-		if (!php_cli_server_workers) {
-			php_cli_server_workers_max = 1;
-			return;
-		}
+		php_cli_server_workers = pecalloc(
+			php_cli_server_workers_max, sizeof(pid_t), 1);
 
 		php_cli_server_master = getpid();
 
@@ -2422,6 +2438,14 @@ static int php_cli_server_ctor(php_cli_server *server, const char *addr, const c
 		if (errstr) {
 			zend_string_release_ex(errstr, 0);
 		}
+		retval = FAILURE;
+		goto out;
+	}
+	// server_sock needs to be non-blocking when using multiple processes. Without it, the first process would
+	// successfully accept the connection but the others would block, causing client sockets of the same select
+	// call not to be handled.
+	if (SUCCESS != php_set_sock_blocking(server_sock, 0)) {
+		php_cli_server_logf(PHP_CLI_SERVER_LOG_ERROR, "Failed to make server socket non-blocking");
 		retval = FAILURE;
 		goto out;
 	}
@@ -2565,7 +2589,8 @@ static int php_cli_server_do_event_for_each_fd_callback(void *_params, php_socke
 		struct sockaddr *sa = pemalloc(server->socklen, 1);
 		client_sock = accept(server->server_sock, sa, &socklen);
 		if (!ZEND_VALID_SOCKET(client_sock)) {
-			if (php_cli_server_log_level >= PHP_CLI_SERVER_LOG_ERROR) {
+			int err = php_socket_errno();
+			if (err != SOCK_EAGAIN && php_cli_server_log_level >= PHP_CLI_SERVER_LOG_ERROR) {
 				char *errstr = php_socket_strerror(php_socket_errno(), NULL, 0);
 				php_cli_server_logf(PHP_CLI_SERVER_LOG_ERROR,
 					"Failed to accept a client (reason: %s)", errstr);

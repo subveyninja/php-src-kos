@@ -411,6 +411,7 @@ static int zend_jit_disasm_init(void)
 	REGISTER_HELPER(zend_jit_leave_top_func_helper);
 	REGISTER_HELPER(zend_jit_leave_func_helper);
 	REGISTER_HELPER(zend_jit_symtable_find);
+	REGISTER_HELPER(zend_jit_hash_index_lookup_rw_no_packed);
 	REGISTER_HELPER(zend_jit_hash_index_lookup_rw);
 	REGISTER_HELPER(zend_jit_hash_index_lookup_w);
 	REGISTER_HELPER(zend_jit_hash_lookup_rw);
@@ -460,6 +461,7 @@ static int zend_jit_disasm_init(void)
 	REGISTER_HELPER(zend_jit_post_inc_typed_ref);
 	REGISTER_HELPER(zend_jit_post_dec_typed_ref);
 	REGISTER_HELPER(zend_jit_assign_op_to_typed_ref);
+	REGISTER_HELPER(zend_jit_assign_op_to_typed_ref_tmp);
 	REGISTER_HELPER(zend_jit_only_vars_by_reference);
 	REGISTER_HELPER(zend_jit_invalid_array_access);
 	REGISTER_HELPER(zend_jit_invalid_property_read);
@@ -495,6 +497,7 @@ static int zend_jit_disasm_init(void)
 	REGISTER_HELPER(zval_jit_update_constant_ex);
 #endif
 	REGISTER_HELPER(zend_jit_free_trampoline_helper);
+	REGISTER_HELPER(zend_jit_exception_in_interrupt_handler_helper);
 #undef  REGISTER_HELPER
 
 #ifndef _WIN32

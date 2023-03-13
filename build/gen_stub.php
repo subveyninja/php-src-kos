@@ -118,6 +118,10 @@ class SimpleType {
                 return new SimpleType($node->toString(), true);
             }
 
+            if ($node->toLowerString() === 'self') {
+                throw new Exception('The exact class name must be used instead of "self"');
+            }
+
             assert($node->isFullyQualified());
             return new SimpleType($node->toString(), false);
         }
@@ -142,9 +146,10 @@ class SimpleType {
             case "object":
             case "resource":
             case "mixed":
-            case "self":
             case "static":
                 return new SimpleType(strtolower($type), true);
+            case "self":
+                throw new Exception('The exact class name must be used instead of "self"');
         }
 
         if (strpos($type, "[]") !== false) {
@@ -1162,6 +1167,10 @@ function parseFunctionLike(
             }
         }
 
+        if ($param->default instanceof Expr\ClassConstFetch && $param->default->class->toLowerString() === "self") {
+            throw new Exception('The exact class name must be used instead of "self"');
+        }
+
         $foundVariadic = $param->variadic;
 
         $args[] = new ArgInfo(
@@ -1792,7 +1801,7 @@ function initPhpParser() {
     }
 
     $isInitialized = true;
-    $version = "4.9.0";
+    $version = "4.13.0";
     $phpParserDir = __DIR__ . "/PHP-Parser-$version";
     if (!is_dir($phpParserDir)) {
         installPhpParser($version, $phpParserDir);

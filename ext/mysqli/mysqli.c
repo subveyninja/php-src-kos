@@ -1043,6 +1043,7 @@ PHP_METHOD(mysqli_result, __construct)
 	}
 
 	if (!result) {
+		MYSQLI_REPORT_MYSQL_ERROR(mysql->mysql);
 		RETURN_FALSE;
 	}
 
@@ -1131,6 +1132,17 @@ void php_mysqli_fetch_into_hash_aux(zval *return_value, MYSQL_RES * result, zend
 	}
 #else
 	mysqlnd_fetch_into(result, ((fetchtype & MYSQLI_NUM)? MYSQLND_FETCH_NUM:0) | ((fetchtype & MYSQLI_ASSOC)? MYSQLND_FETCH_ASSOC:0), return_value, MYSQLND_MYSQLI);
+	/* TODO: We don't have access to the connection object at this point, so we use low-level
+	 * mysqlnd APIs to access the error information. We should try to pass through the connection
+	 * object instead. */
+	if (MyG(report_mode) & MYSQLI_REPORT_ERROR) {
+		MYSQLND_CONN_DATA *conn = result->conn;
+		unsigned error_no = conn->m->get_error_no(conn);
+		if (error_no) {
+			php_mysqli_report_error(
+				conn->m->get_sqlstate(conn), error_no, conn->m->get_error_str(conn));
+		}
+	}
 #endif
 }
 /* }}} */
@@ -1187,11 +1199,13 @@ void php_mysqli_fetch_into_hash(INTERNAL_FUNCTION_PARAMETERS, int override_flags
 		ZVAL_COPY_VALUE(&dataset, return_value);
 
 		object_init_ex(return_value, ce);
+		HashTable *prop_table = zend_symtable_to_proptable(Z_ARR(dataset));
+		zval_ptr_dtor(&dataset);
 		if (!ce->default_properties_count && !ce->__set) {
-			Z_OBJ_P(return_value)->properties = Z_ARR(dataset);
+			Z_OBJ_P(return_value)->properties = prop_table;
 		} else {
-			zend_merge_properties(return_value, Z_ARRVAL(dataset));
-			zval_ptr_dtor(&dataset);
+			zend_merge_properties(return_value, prop_table);
+			zend_array_release(prop_table);
 		}
 
 		if (ce->constructor) {

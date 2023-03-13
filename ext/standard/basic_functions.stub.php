@@ -429,7 +429,7 @@ function getmxrr(string $hostname, &$hosts, &$weights = null): bool {}
 
 /* net.c */
 
-#if defined(PHP_WIN32) || HAVE_GETIFADDRS
+#if defined(PHP_WIN32) || HAVE_GETIFADDRS || defined(__PASE__)
 function net_get_interfaces(): array|false {}
 #endif
 
@@ -655,7 +655,7 @@ function setlocale(int $category, $locales, ...$rest): string|false {}
 /** @param array $result */
 function parse_str(string $string, &$result): void {}
 
-function str_getcsv(string $string, string $separator = ",", string $enclosure = "\"", string $escape = '\\'): array {}
+function str_getcsv(string $string, string $separator = ",", string $enclosure = "\"", string $escape = "\\"): array {}
 
 function str_repeat(string $string, int $times): string {}
 
@@ -1423,8 +1423,7 @@ function uniqid(string $prefix = "", bool $more_entropy = false): string {}
 
 /* url.c */
 
-/** @return mixed */
-function parse_url(string $url, int $component = -1) {}
+function parse_url(string $url, int $component = -1): int|string|array|null|false {}
 
 function urlencode(string $string): string {}
 
@@ -1434,7 +1433,7 @@ function rawurlencode(string $string): string {}
 
 function rawurldecode(string $string): string {}
 
-/** @param resource $context */
+/** @param resource|null $context */
 function get_headers(string $url, bool $associative = false, $context = null): array|false {}
 
 /* user_filters.c */

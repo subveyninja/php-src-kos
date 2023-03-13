@@ -360,6 +360,9 @@ typedef union _zend_jit_trace_stack {
 		(_stack)[_slot].reg = _reg; \
 		(_stack)[_slot].flags = _flags; \
 	} while (0)
+#define RESET_STACK_MEM_TYPE(_stack, _slot) do { \
+		(_stack)[_slot].mem_type = IS_UNKNOWN; \
+	} while (0)
 
 /* trace info flags */
 #define ZEND_JIT_TRACE_CHECK_INTERRUPT (1<<0)
@@ -440,7 +443,7 @@ struct _zend_jit_trace_stack_frame {
 	((frame)->_info & TRACE_FRAME_MASK_THIS_CHECKED)
 #define TRACE_FRAME_IS_UNKNOWN_RETURN(frame) \
 	((frame)->_info & TRACE_FRAME_MASK_UNKNOWN_RETURN)
-#define TRACE_FRAME_NO_NEED_REKEASE_THIS(frame) \
+#define TRACE_FRAME_NO_NEED_RELEASE_THIS(frame) \
 	((frame)->_info & TRACE_FRAME_MASK_NO_NEED_RELEASE_THIS)
 
 #define TRACE_FRAME_SET_UNKNOWN_NUM_ARGS(frame) do { \

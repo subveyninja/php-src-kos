@@ -146,7 +146,7 @@ static zend_off_t getStrrtokenPos(char* str, zend_off_t savedPos)
 	zend_off_t i;
 
 	for(i=savedPos-1; i>=0; i--) {
-		if(isIDSeparator(*(str+i)) ){
+		if(isIDSeparator(*(str+i)) || isKeywordSeparator(*(str+i))){
 			/* delimiter found; check for singleton */
 			if(i>=2 && isIDSeparator(*(str+i-2)) ){
 				/* a singleton; so send the position of token before the singleton */
@@ -1239,7 +1239,7 @@ PHP_FUNCTION(locale_filter_matches)
 		if( token && (token==cur_lang_tag) ){
 			/* check if the char. after match is SEPARATOR */
 			chrcheck = token + (strlen(cur_loc_range));
-			if( isIDSeparator(*chrcheck) || isEndOfTag(*chrcheck) ){
+			if( isIDSeparator(*chrcheck) || isKeywordSeparator(*chrcheck) || isEndOfTag(*chrcheck) ){
 				efree( cur_lang_tag );
 				efree( cur_loc_range );
 				if( can_lang_tag){

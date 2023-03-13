@@ -122,11 +122,6 @@ PHP_MSHUTDOWN_FUNCTION(syslog)
 	return SUCCESS;
 }
 
-void php_openlog(const char *ident, int option, int facility)
-{
-	openlog(ident, option, facility);
-	PG(have_called_openlog) = 1;
-}
 
 /* {{{ Open connection to system logger */
 /*
@@ -163,7 +158,7 @@ PHP_FUNCTION(closelog)
 {
 	ZEND_PARSE_PARAMETERS_NONE();
 
-	closelog();
+	php_closelog();
 	if (BG(syslog_device)) {
 		free(BG(syslog_device));
 		BG(syslog_device)=NULL;

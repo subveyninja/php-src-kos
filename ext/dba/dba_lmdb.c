@@ -72,6 +72,7 @@ DBA_OPEN_FUNC(lmdb)
 
 	rc = mdb_env_open(env, info->path, flags, mode);
 	if (rc) {
+		mdb_env_close(env);
 		*error = mdb_strerror(rc);
 		return FAILURE;
 	}
@@ -254,6 +255,7 @@ DBA_DELETE_FUNC(lmdb)
 
 	php_error_docref1(NULL, key, E_WARNING, "%s", mdb_strerror(rc));
 
+	mdb_txn_abort(LMDB_IT(txn));
 	return FAILURE;
 }
 

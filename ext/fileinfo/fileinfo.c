@@ -19,7 +19,7 @@
 #endif
 #include "php.h"
 
-#include <magic.h>
+#include "libmagic/magic.h"
 /*
  * HOWMANY specifies the maximum offset libmagic will look at
  * this is currently hardcoded in the libmagic source but not exported
@@ -380,7 +380,7 @@ static void _php_finfo_get_type(INTERNAL_FUNCTION_PARAMETERS, int mode, int mime
 				break;
 
 			default:
-				zend_argument_type_error(2, "must be of type resource|string, %s given", zend_zval_type_name(what));
+				zend_argument_type_error(1, "must be of type resource|string, %s given", zend_zval_type_name(what));
 				RETURN_THROWS();
 		}
 
