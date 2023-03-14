@@ -8,19 +8,22 @@
 	<!-- Bootstrap CSS -->
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-	<title>KasperskyOS PHP test page</title>
+	<title>KasperskyOS PHP</title>
 </head>
 <body>
 	<div class="container">
-		<div class="px-3 py-3 pt-md-5 pb-md-5 mx-auto text-center">
-			<h1>KasperskyOS PHP test page</h1>
+		<div class="pt-md-5 mx-auto">
+			<h3>Тестовая страница</h3>
+		</div>
+		<div class="pb-md-5 mx-auto">
+			<h1 style="font-weight:900">KasperskyOS PHP</h1>
 		</div>
 		<div class="row">
 			<?php
 				function printListItem($index) {
-					echo "<div class=\"col-4 pb-5\"><img src=\"/images/0", $index, ".jpg\"/ class=\"img-fluid\"></div>\n";
+					echo "<div class=\"col-4 pb-5\"><div class=\"shadow p-2 bg-body-tertiary\"><img src=\"/images/0", $index, ".png\"/ class=\"img-fluid\"></div></div>\n";
 				}
-				foreach (range(1, 9) as $index) {
+				foreach (range(1, 6) as $index) {
 					printListItem($index);
 				}
 			?>
