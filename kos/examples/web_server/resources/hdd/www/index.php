@@ -13,7 +13,7 @@
 <body>
 	<div class="container">
 		<div class="pt-md-5 mx-auto">
-			<h3>Тестовая страница</h3>
+			<h3>Testing page</h3>
 		</div>
 		<div class="pb-md-5 mx-auto">
 			<h1 style="font-weight:900">KasperskyOS PHP</h1>
