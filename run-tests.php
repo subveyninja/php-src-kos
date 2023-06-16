@@ -581,6 +581,7 @@ function main(): void
                     $environment['SKIP_PERF_SENSITIVE'] = 1;
                     if ($switch === '--msan') {
                         $environment['SKIP_MSAN'] = 1;
+                        $environment['MSAN_OPTIONS'] = 'intercept_tls_get_addr=0';
                     }
 
                     $lsanSuppressions = __DIR__ . '/.github/lsan-suppressions.txt';
@@ -1625,6 +1626,7 @@ escape:
                                 'E_USER_NOTICE',
                                 'E_STRICT', // TODO Cleanup when removed from Zend Engine.
                                 'E_RECOVERABLE_ERROR',
+                                'E_DEPRECATED',
                                 'E_USER_DEPRECATED'
                             ];
                             $error_consts = array_combine(array_map('constant', $error_consts), $error_consts);
@@ -1797,6 +1799,10 @@ function run_test(string $php, $file, array $env): string
         $skipCache = new SkipCache($enableSkipCache, $cfg['keep']['skip']);
     }
 
+    $retriable = true;
+    $retried = false;
+retry:
+
     $temp_filenames = null;
     $org_file = $file;
     $orig_php = $php;
@@ -1836,8 +1842,11 @@ TEST $file
 
     $tested = $test->getName();
 
-    if ($num_repeats > 1 && $test->hasSection('FILE_EXTERNAL')) {
-        return skip_test($tested, $tested_file, $shortname, 'Test with FILE_EXTERNAL might not be repeatable');
+    if ($test->hasSection('FILE_EXTERNAL')) {
+        $retriable = false;
+        if ($num_repeats > 1) {
+            return skip_test($tested, $tested_file, $shortname, 'Test with FILE_EXTERNAL might not be repeatable');
+        }
     }
 
     if ($test->hasSection('CAPTURE_STDIO')) {
@@ -1867,6 +1876,7 @@ TEST $file
         }
         $php = $php_cgi . ' -C ';
         $uses_cgi = true;
+        $retriable = false;
         if ($num_repeats > 1) {
             return skip_test($tested, $tested_file, $shortname, 'CGI does not support --repeat');
         }
@@ -1884,20 +1894,18 @@ TEST $file
         } else {
             return skip_test($tested, $tested_file, $shortname, 'phpdbg not available');
         }
+        $retriable = false;
         if ($num_repeats > 1) {
             return skip_test($tested, $tested_file, $shortname, 'phpdbg does not support --repeat');
         }
     }
 
-    if ($num_repeats > 1) {
-        if ($test->hasSection('CLEAN')) {
-            return skip_test($tested, $tested_file, $shortname, 'Test with CLEAN might not be repeatable');
-        }
-        if ($test->hasSection('STDIN')) {
-            return skip_test($tested, $tested_file, $shortname, 'Test with STDIN might not be repeatable');
-        }
-        if ($test->hasSection('CAPTURE_STDIO')) {
-            return skip_test($tested, $tested_file, $shortname, 'Test with CAPTURE_STDIO might not be repeatable');
+    foreach (['CLEAN', 'STDIN', 'CAPTURE_STDIO'] as $section) {
+        if ($test->hasSection($section)) {
+            $retriable = false;
+            if ($num_repeats > 1) {
+                return skip_test($tested, $tested_file, $shortname, "Test with $section might not be repeatable");
+            }
         }
     }
 
@@ -2079,8 +2087,11 @@ TEST $file
         $ini = preg_replace('/{MAIL:(\S+)}/', $replacement, $ini);
         settings2array(preg_split("/[\n\r]+/", $ini), $ini_settings);
 
-        if ($num_repeats > 1 && isset($ini_settings['opcache.opt_debug_level'])) {
-            return skip_test($tested, $tested_file, $shortname, 'opt_debug_level tests are not repeatable');
+        if (isset($ini_settings['opcache.opt_debug_level'])) {
+            $retriable = false;
+            if ($num_repeats > 1) {
+                return skip_test($tested, $tested_file, $shortname, 'opt_debug_level tests are not repeatable');
+            }
         }
     }
 
@@ -2611,6 +2622,10 @@ COMMAND $cmd
 
         $wanted_re = null;
     }
+    if (!$passed && !$retried && $retriable && error_may_be_retried($output)) {
+        $retried = true;
+        goto retry;
+    }
 
     if ($passed) {
         if (!$cfg['keep']['php'] && !$leaked) {
@@ -2641,6 +2656,9 @@ COMMAND $cmd
             } elseif ($test->hasSection('XLEAK')) {
                 $warn = true;
                 $info = " (warn: XLEAK section but test passes)";
+            } elseif ($retried) {
+                $warn = true;
+                $info = " (warn: Test passed on retry attempt)";
             } else {
                 show_result("PASS", $tested, $tested_file, '', $temp_filenames);
                 $junit->markTestAs('PASS', $shortname, $tested);
@@ -2728,9 +2746,14 @@ $output
     if (!$passed || $leaked) {
         // write .sh
         if (strpos($log_format, 'S') !== false) {
+            $env_lines = [];
+            foreach ($env as $env_var => $env_val) {
+                $env_lines[] = "export $env_var=" . escapeshellarg($env_val ?? "");
+            }
+            $exported_environment = $env_lines ? "\n" . implode("\n", $env_lines) . "\n" : "";
             $sh_script = <<<SH
 #!/bin/sh
-
+{$exported_environment}
 case "$1" in
 "gdb")
     gdb --args {$orig_cmd}
@@ -2777,6 +2800,11 @@ SH;
     $junit->markTestAs($restype, $shortname, $tested, null, $info, $diff);
 
     return $restype[0] . 'ED';
+}
+
+function error_may_be_retried(string $output): bool
+{
+    return preg_match('((timed out)|(connection refused)|(404: page not found)|(address already in use)|(mailbox already exists))i', $output) === 1;
 }
 
 /**
@@ -2962,7 +2990,7 @@ function generate_diff_external(string $diff_cmd, string $exp_file, string $outp
 {
     $retval = shell_exec("{$diff_cmd} {$exp_file} {$output_file}");
 
-    return is_string($retval) ? $retval : 'Could not run external diff tool set through PHP_TEST_DIFF_CMD environment variable';
+    return is_string($retval) ? $retval : 'Could not run external diff tool set through TEST_PHP_DIFF_CMD environment variable';
 }
 
 function generate_diff(string $wanted, ?string $wanted_re, string $output): string
