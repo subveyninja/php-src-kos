@@ -6,7 +6,7 @@ set (CMAKE_C_STANDARD 11)
 if (KOS)
 	include (platform)
 
-	initialize_platform ()
+	initialize_platform (FORCE_STATIC)
 	include (platform/image)
 	include (platform/nk)
 	# Needed to find Qt libs from SDK
