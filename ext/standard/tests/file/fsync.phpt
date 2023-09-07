@@ -1,5 +1,7 @@
 --TEST--
 Test fsync() function: basic functionality
+--SKIPIF--
+<?php if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test"); ?>
 --FILE--
 <?php
 

@@ -7,6 +7,7 @@ file_get_contents() test using offset parameter out of range
 display_errors=false
 --SKIPIF--
 <?php
+    if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test");
     if (getenv("SKIP_SLOW_TESTS")) die("skip slow test");
 ?>
 --FILE--

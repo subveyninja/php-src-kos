@@ -2,6 +2,7 @@
 Bug #74090 stream_get_contents maxlength>-1 returns empty string on windows
 --SKIPIF--
 <?php
+if (PHP_OS_FAMILY == "KOS") die("skip KOS failed test");
 if (getenv("SKIP_ONLINE_TESTS")) { die('skip: online test'); }
 if (getenv("SKIP_SLOW_TESTS")) { die('skip: slow test'); }
 ?>
