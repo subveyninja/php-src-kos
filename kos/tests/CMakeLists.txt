@@ -60,6 +60,17 @@ set(PRODUCT_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 set(RESOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 set(PRODUCT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
+set(TEST_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/hdd/")
+
+if (KOS)
+	set(TESTS_ROOT "")
+else ()
+	set(TESTS_ROOT ${TEST_RESOURCES})
+endif ()
+
+set(TESTS_RUN_SCRIPT "${TESTS_ROOT}/run-tests.php")
+set(TESTS_PATH "${TESTS_ROOT}/tests/")
+
 add_subdirectory(libraries)
 add_subdirectory(client)
 add_subdirectory(server)

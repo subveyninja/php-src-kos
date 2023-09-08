@@ -5,7 +5,6 @@
 # include <strict/posix/sys/socket.h>
 # include <strict/c/string.h>
 # include <strict/posix/fcntl.h>
-# include <strict/posix/pthread.h>
 #else
 # include <sys/socket.h>
 # include <pthread.h>
@@ -17,55 +16,73 @@
 
 #include <limits.h>
 #include <unistd.h>
-#include <zend_types.h>
 
 void* kos_main(void *args);
 
-int main(int argc, char *argv[]) {
-    int main_sock = create_local_server_nonblocking_socket(KOS_TESTING_PORT);
-    int save_main_sock = main_sock;
-
-    // redirect STDOUT to our descriptor
-    int stdout_fd[2];
-
-    int res_pipe = pipe(stdout_fd);
-    if (0 != res_pipe) {
-        fprintf(stderr, "Server: Can't pipe stdout_fd\n");
-        return 1;
+void dump_data(const char *data, ssize_t size) {
+    fprintf(stderr, "Bytes: %zd\n", size);
+    for (ssize_t i = 0; i < size; ++i) {
+        fprintf(stderr, "%02X ", data[i]);
     }
+    fprintf(stderr, "\n");
+}
 
-    int res_dup2 = dup2(stdout_fd[1], STDOUT_FILENO);
-    if (0 > res_dup2) {
-        fprintf(stderr, "Server: Can't dup2 stdout_fd\n");
-        return 1;
+size_t read_stdout_dump(const char* dump_file, char *buffer, size_t size) {
+    int fd = open(dump_file, O_RDONLY, 0600);
+    if (0 >= fd) {
+        return 0;
     }
+    ssize_t bytes = read(fd, buffer, size);
+    close(fd);
+    return bytes > 0 ? (size_t)bytes : 0;
+}
 
-    close(stdout_fd[1]);
-
-    // Remember the current director
-    char currentDir[PATH_MAX + 1];
-    getcwd(currentDir, PATH_MAX);
-
+int wait_request(int socket) {
     int trying_to_receive = 10000;
+
+    // Simple implement select() with timer
     while (1) {
-        // @todo: can't explain how the main sock changing inside main() thread
-        if (main_sock != save_main_sock) {
-            main_sock = save_main_sock;
+        int client = accept(socket, NULL, NULL);
+        if (0 < client) {
+            return client;
         }
 
+        --trying_to_receive;
+        if (0 == trying_to_receive) {
+            return -1;
+        }
+
+        usleep(10000);
+    }
+}
+
+int send_response(int socket, int rc, const char* dump_file) {
+    char response[KOS_TESTING_BUF_SIZE + 3] = {0};
+
+    sprintf(response, "%03d", rc);
+
+    size_t bytes = read_stdout_dump(dump_file, response + 3, KOS_TESTING_BUF_SIZE);
+    ssize_t res_send = send(socket, response, bytes + 3, 0);
+    if (0 > res_send) {
+        fprintf(stderr, "Server: Can't send response\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    static const char *stdout_dump_file = "/tmp/stdout.log";
+
+    const int main_sock = create_local_server_nonblocking_socket(KOS_TESTING_PORT);
+
+    while (1) {
         // Simple implement select() with timer
-        int cur_sock = accept(main_sock, NULL, NULL);
+        int cur_sock = wait_request(main_sock);
         if (0 > cur_sock) {
-            --trying_to_receive;
-            if (0 == trying_to_receive) {
-                fprintf(stderr, "Server can't get new request\n");
-                break;
-            }
-            usleep(10000);
-            continue;
+            fprintf(stderr, "Server can't get new request\n");
+            break;
         }
-
-        trying_to_receive = 1000;
 
         // Receive command for main() thread
         char request[KOS_TESTING_BUF_SIZE] = {0};
@@ -76,82 +93,43 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // If `Client` said done, let's show results
+        // If `Client` said done, stop working
         if (strcmp(request, "End") == 0) {
             close(cur_sock);
             close(main_sock);
             break;
         }
 
-        // Collect and spit arguments
-        kos_args_t *data = split(request);
-
         // Before running main() thread update working dir
-        chdir(currentDir);
+        chdir(TESTS_PATH);
 
-#ifdef __KOS__
-        // Before running main() thread make all descriptors nonblocking
-        // coz some tests block on read() and never end
-        for (int i = 0; i < 100; ++i) {
-            fcntl(i, F_SETFL, fcntl(i, F_GETFL) | O_NONBLOCK);
+        int save_stdout = dup(STDOUT_FILENO);
+        int stdout_dump = open(stdout_dump_file, O_RDWR | O_CREAT | O_APPEND, 0600);
+        if (0 > dup2(stdout_dump, STDOUT_FILENO)) {
+            fprintf(stderr, "Server: Can't dup2 stdout\n");
+            break;
         }
-#endif
+
+        // Collect and split arguments
+        kos_args_t* data = split(request);
 
         // Start main() thread
-        int status_addr = create_thread_and_join(data, kos_main);
-        if (0 > status_addr) {
-            close(cur_sock);
-            free_kos_args(data);
-            continue;
-        }
+        int main_rc = create_thread_and_join(data, kos_main);
 
-#ifdef __KOS__
-        // Revert nonblocking for all descriptors
-        for (int i = 0; i < 100; ++i) {
-            if (save_main_sock != i) {
-                fcntl(i, F_SETFL, fcntl(i, F_GETFL) & ~O_NONBLOCK);
-            }
-        }
-#endif
+        free_kos_args(data);
 
-        // Collect output from main() thread
-        char buf_stdout[KOS_TESTING_BUF_SIZE] = {0};
-        int res_read_stdout = read_nonblocking_stdout(stdout_fd[0], buf_stdout, sizeof(buf_stdout));
-        if (0 > res_read_stdout) {
-            fprintf(stderr, "Server: Can't read from pipe stdout_fd\n");
-            return 1;
-        }
+        // Flush and restore stdout
+        fflush(stdout);
+        close(stdout_dump);
+        dup2(save_stdout, STDOUT_FILENO);
+        close(save_stdout);
 
-        // Preparing response for `Client`
-        char response[KOS_TESTING_BUF_SIZE + 16] = {0};
-
-#ifdef __KOS__
-        size_t len = strlen(buf_stdout);
-        size_t pos = 0;
-        while (pos < len && buf_stdout[pos] != 13) {
-            ++pos;
-        }
-        if (pos == len) {
-            sprintf(response, "%03d%s", status_addr, buf_stdout);
-        } else {
-            ++pos;
-            for (int i = 0; i < pos; ++i) {
-                fprintf(stderr, "%c", buf_stdout[i]);
-            }
-            sprintf(response, "%03d%s", status_addr, buf_stdout + pos);
-        }
-#else
-        sprintf(response, "%03d%s", status_addr, buf_stdout);
-#endif
-
-        // Send...
-        ssize_t res_send = send(cur_sock, response, strlen(response), 0);
-        if (0 > res_send) {
-            fprintf(stderr, "Server: Can't send response\n");
-        }
+        // Send response to client and close connection
+        send_response(cur_sock, main_rc, stdout_dump_file);
 
         close(cur_sock);
-        free_kos_args(data);
+
+        remove(stdout_dump_file);
     }
 
     return 0;

@@ -2016,6 +2016,8 @@ TEST $file
         $extensions = array_merge($extensions, $IN_REDIRECT['EXTENSIONS']);
     }
 
+    $kos_extensions = ["ctype", "dom", "fileinfo", "libxml", "phar", "posix", "session", "sqlite3", "tokenizer", "xml", "xmlreader", "xmlwriter"];
+
     /* Load required extensions */
     if ($extensions != []) {
         $ext_params = [];
@@ -2025,6 +2027,9 @@ TEST $file
         $ext_prefix = IS_WINDOWS ? "php_" : "";
         $missing = [];
         foreach ($extensions as $req_ext) {
+            if (in_array(strtolower($req_ext), $kos_extensions)) {
+                continue;
+            }
             if (!in_array(strtolower($req_ext), $loaded)) {
                 if ($req_ext == 'opcache' || $req_ext == 'xdebug') {
                     $ext_file = $ext_dir . DIRECTORY_SEPARATOR . $ext_prefix . $req_ext . '.' . PHP_SHLIB_SUFFIX;

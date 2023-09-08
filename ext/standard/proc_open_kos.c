@@ -240,23 +240,6 @@ int create_thread_and_join(kos_args_t *data, void *(*f)(void *args)) {
     return ret;
 }
 
-int read_nonblocking_stdout(int fd, char *buf, int buf_len) {
-    fflush(stdout);
-
-    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
-    int res_read_stdout = (int)read(fd, buf, buf_len);
-    if (0 > res_read_stdout && errno != EAGAIN) {
-        fprintf(stderr, "Can't read from pipe stdout_fd\n");
-        return -1;
-    }
-
-    if (errno == EAGAIN) {
-        return 0;
-    }
-
-    return res_read_stdout;
-}
-
 static int g_last_proc_exit_status;
 static int g_last_cli_socket;
 static int le_proc_open; /* Resource number for `proc` resources */

@@ -59,4 +59,10 @@ target_compile_definitions(${TARGET_NAME}
         ZEND_SIGNALS
 )
 
+target_compile_definitions(${TARGET_NAME}
+	PRIVATE
+		TESTS_RUN_SCRIPT="${TESTS_RUN_SCRIPT}"
+		TESTS_PATH="${TESTS_PATH}"
+)
+
 install(TARGETS ${TARGET_NAME})

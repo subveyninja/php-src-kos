@@ -19,6 +19,5 @@ kos_args_t *split(char *str);
 void free_kos_args(kos_args_t *data);
 
 int create_thread_and_join(kos_args_t *data, void *(*f)(void *args));
-int read_nonblocking_stdout(int fd, char *buf, int buf_len);
 
 #endif // PROC_OPEN_KOS_H

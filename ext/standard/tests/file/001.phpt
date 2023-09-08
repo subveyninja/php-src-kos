@@ -57,14 +57,7 @@ $s = stat ('test.link');
 $ls = lstat ('test.link');
 for ($i = 0; $i <= 11; $i++) {
     if ($ls[$i] != $s[$i]) {
-        if ($i != 6 && $i != 10 && $i != 11) {
-            echo "test.link lstat and stat differ at element $i\n";
-        }
-    }
-    /* KOS lstat() and stat() return 0 for `time of last access (Unix timestamp)` */
-    /* For detail see https://www.php.net/manual/en/function.stat.php             */
-    if ($i == 8 && PHP_OS_FAMILY == "KOS") {
-        echo "test.link lstat and stat differ at element $i\n";
+    if ($i != 6 && $i != 10 && $i != 11) echo "test.link lstat and stat differ at element $i\n";
     }
 }
 echo "test.file is " . filetype('test.file') . "\n";
