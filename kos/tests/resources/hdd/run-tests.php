@@ -3270,7 +3270,7 @@ function show_test(int $test_idx, string $shortname): void
     global $test_cnt;
     global $line_length;
 
-    $str = "TEST $test_idx/$test_cnt [$shortname]\r";
+    $str = "TEST $test_idx/$test_cnt [$shortname]\n";
     $line_length = strlen($str);
     echo $str;
     flush();
@@ -3278,14 +3278,6 @@ function show_test(int $test_idx, string $shortname): void
 
 function clear_show_test(): void
 {
-    global $line_length;
-    // Parallel testing
-    global $workerID;
-
-    if (!$workerID && isset($line_length)) {
-        // Write over the last line to avoid random trailing chars on next echo
-        echo str_repeat(" ", $line_length), "\r";
-    }
 }
 
 function parse_conflicts(string $text): array
