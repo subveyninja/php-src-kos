@@ -3,6 +3,7 @@
 import sys
 import collections
 from enum import Enum
+from colorama import Fore
 
 
 class Result(Enum):
@@ -24,20 +25,37 @@ result_codes = {
     "XFAIL": Result.XFAIL,
 }
 
+result_text = {
+    Result.PASS: Fore.GREEN + "PASS" + Fore.WHITE,
+    Result.SKIP: Fore.LIGHTBLACK_EX + "SKIP" + Fore.WHITE,
+    Result.BORK: Fore.YELLOW + "BORK" + Fore.WHITE,
+    Result.WARN: Fore.YELLOW + "WARN" + Fore.WHITE,
+    Result.FAIL: Fore.RED + "FAIL" + Fore.WHITE,
+    Result.XFAIL: Fore.GREEN + "XFAIL" + Fore.WHITE,
+}
+
 
 def get_result_code(result):
     try:
         return result_codes[result]
     except KeyError:
+        return Fore.LIGHTBLACK_EX + "UNKNOWN" + Fore.WHITE
+
+
+def get_result_text(code):
+    try:
+        return result_text[code]
+    except KeyError:
         return Result.UNKNOWN
 
 
-def is_test_result(text):
-    return text and ord(text[0]) == 27
+def find_test_result(text):
+    # return text.find(chr(27) + "[1;")
+    return text.find("[1;")
 
 
 def get_test_result(text):
-    return get_result_code(text.split(' ')[0][7:-4])
+    return get_result_code(text.split(' ')[0][6:-4])
 
 
 def tests_iterator(file):
@@ -45,7 +63,9 @@ def tests_iterator(file):
     res = Result.UNKNOWN
     with open(file, "r", encoding="utf-8", errors="ignore") as f:
         for line in f.readlines():
-            if is_test_result(line):
+            pos = find_test_result(line)
+            if pos > -1:
+                line = line[pos:]
                 res = get_test_result(line)
                 begin = line.find("[/tests") + 1
                 if begin > 0:
@@ -132,9 +152,19 @@ def action_diff(argv):
     check_argv(argv, 4, "diff <old log file> <new log file>")
 
     old_results = {file: res for res, file in tests_iterator(argv[2])}
-    for res, file in tests_iterator(argv[3]):
-        if file in old_results and old_results[file] != res:
-            print(res, file)
+    new_results = {file: res for res, file in tests_iterator(argv[3])}
+    for file in new_results:
+        if file in old_results:
+            if old_results[file] != new_results[file]:
+                print(get_result_text(new_results[file]), file)
+
+    for file in old_results:
+        if file not in new_results:
+            print("Absent in new: {}".format(file))
+
+    for file in new_results:
+        if file not in old_results:
+            print("Absent in old: {}".format(file))
 
 
 def action_filter(argv):
