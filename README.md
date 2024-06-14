@@ -1,4 +1,4 @@
-# PHP Interpreter for KasperskyOS
+# KasperskyOS modification of PHP Interpreter
 
 >This version of PHP Interpreter (Zend) is adapted for KasperskyOS. The PHP Interpreter operates in FastCGI mode.
 
