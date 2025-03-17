@@ -3,7 +3,6 @@
 # include <strict/posix/unistd.h>
 # include <strict/c/stdlib.h>
 # include <strict/posix/sys/socket.h>
-# include <strict/c/string.h>
 # include <strict/posix/fcntl.h>
 #else
 # include <sys/socket.h>
@@ -39,21 +38,21 @@ size_t read_stdout_dump(const char* dump_file, char *buffer, size_t size) {
 
 int wait_request(int socket) {
     int trying_to_receive = 10000;
+    int client = -1;
 
     // Simple implement select() with timer
-    while (1) {
-        int client = accept(socket, NULL, NULL);
-        if (0 < client) {
-            return client;
-        }
+    while (client <= 0) {
+        client = accept(socket, NULL, NULL);
 
         --trying_to_receive;
         if (0 == trying_to_receive) {
-            return -1;
+            break;
         }
 
         usleep(10000);
     }
+
+    return client;
 }
 
 int send_response(int socket, int rc, const char* dump_file) {

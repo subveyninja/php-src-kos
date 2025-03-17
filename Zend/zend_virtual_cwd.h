@@ -319,7 +319,11 @@ extern void virtual_cwd_main_cwd_init(uint8_t);
 #define VCWD_STAT(path, buff) php_sys_stat(path, buff)
 #define VCWD_LSTAT(path, buff) lstat(path, buff)
 #define VCWD_OPENDIR(pathname) opendir(pathname)
-#define VCWD_POPEN(command, type) popen(command, type)
+#ifndef __KOS__
+# define VCWD_POPEN(command, type) popen(command, type)
+#else
+# define VCWD_POPEN(command, type) NULL
+#endif
 
 #define VCWD_REALPATH(path, real_path) tsrm_realpath(path, real_path)
 

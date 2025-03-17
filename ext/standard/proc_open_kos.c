@@ -1,4 +1,3 @@
-#include "php.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <signal.h>
@@ -448,7 +447,7 @@ PHP_FUNCTION(kos_proc_get_status)
 	zval *zproc;
 	php_process_handle *proc;
 	int wstatus;
-	pid_t wait_pid;
+	pid_t wait_pid = 0;
 	int running = 1, signaled = 0, stopped = 0;
 	int exitcode = -1, termsig = 0, stopsig = 0;
 

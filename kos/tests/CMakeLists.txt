@@ -9,6 +9,16 @@ if (KOS)
 	initialize_platform (FORCE_STATIC)
 	include (platform/image)
 	include (platform/nk)
+
+# Detect board.
+if (CMAKE_SYSTEM_SOC STREQUAL "BCM2711")
+    set (BOARD "RPI4_BCM2711")
+elseif (CMAKE_SYSTEM_SOC STREQUAL "RK3568")
+    set (BOARD "RADXA_ROCK_3A")
+else ()
+    message (FATAL_ERROR "Unsupported board for SoC '${CMAKE_SYSTEM_SOC}'")
+endif ()
+
 	# Needed to find Qt libs from SDK
 	set (CMAKE_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH})
 
@@ -23,16 +33,20 @@ if (KOS)
 	include_directories (${precompiled_vfs_INCLUDE})
 endif ()
 
+get_filename_component(PHP_SRC_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
+
+get_filename_component(THIRD_PARTY_ROOT_DIR  "${CMAKE_CURRENT_LIST_DIR}/../../third_party" ABSOLUTE)
+set(OPENSSL_ROOT_DIR ${THIRD_PARTY_ROOT_DIR}/openssl)
+
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-aliasing")
 
-set(PHP_SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../)
-
 include_directories(
-		${PHP_SRC_ROOT}
-		${PHP_SRC_ROOT}/main
-		${PHP_SRC_ROOT}/TSRM
-		${PHP_SRC_ROOT}/Zend
+	${PHP_SRC_ROOT}
+	${PHP_SRC_ROOT}/main
+	${PHP_SRC_ROOT}/TSRM
+	${PHP_SRC_ROOT}/Zend
+	${OPENSSL_ROOT_DIR}/include
 )
 
 if (KOS)

@@ -493,7 +493,11 @@ static int php_stdiop_close(php_stream *stream, int close_handle)
 		if (data->file) {
 			if (data->is_process_pipe) {
 				errno = 0;
+#ifndef __KOS__
 				ret = pclose(data->file);
+#else
+				ret = -1;
+#endif
 
 #ifdef HAVE_SYS_WAIT_H
 				if (WIFEXITED(ret)) {

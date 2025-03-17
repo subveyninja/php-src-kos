@@ -593,7 +593,11 @@ int fpm_unix_init_main(void)
 		}
 
 		/* then fork */
+#ifndef __KOS__
 		pid_t pid = fork();
+#else
+		pid_t pid = -1;
+#endif
 		switch (pid) {
 
 			case -1 : /* error */

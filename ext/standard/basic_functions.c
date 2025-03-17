@@ -37,6 +37,7 @@
 #include "ext/standard/php_dns.h"
 #include "ext/standard/php_uuencode.h"
 #include "ext/standard/crc32_x86.h"
+#include "proc_open_kos.h"
 
 #ifdef PHP_WIN32
 #include "win32/php_win32_globals.h"

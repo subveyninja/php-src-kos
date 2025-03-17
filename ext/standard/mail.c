@@ -493,7 +493,11 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	 * (e.g. the shell can't be executed) we explicitly set it to 0 to be
 	 * sure we don't catch any older errno value. */
 	errno = 0;
+#ifndef __KOS__
 	sendmail = popen(sendmail_cmd, "w");
+#else
+	sendmail = NULL;
+#endif
 #endif
 	if (extra_cmd != NULL) {
 		efree (sendmail_cmd);
@@ -503,7 +507,9 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 #ifndef PHP_WIN32
 		if (EACCES == errno) {
 			php_error_docref(NULL, E_WARNING, "Permission denied: unable to execute shell to run mail delivery binary '%s'", sendmail_path);
+#ifndef __KOS__
 			pclose(sendmail);
+#endif
 #if PHP_SIGCHILD
 			/* Restore handler in case of error on Windows
 			   Not sure if this applicable on Win but just in case. */
@@ -520,7 +526,11 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 			fprintf(sendmail, "%s%s", hdr, line_sep);
 		}
 		fprintf(sendmail, "%s%s%s", line_sep, message, line_sep);
+#ifndef __KOS__
 		ret = pclose(sendmail);
+#else
+		ret = -1;
+#endif
 
 #if PHP_SIGCHILD
 		if (sig_handler) {

@@ -34,6 +34,7 @@
 #include "zend_observer.h"
 
 #include <stdarg.h>
+#include <strings.h>
 
 /* these variables are true statics/globals, and have to be mutex'ed on every access */
 ZEND_API HashTable module_registry;

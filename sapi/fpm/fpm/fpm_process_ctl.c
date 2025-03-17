@@ -103,7 +103,9 @@ static void fpm_pctl_exec(void)
 
 	fpm_stdio_restore_original_stderr(1);
 
+#ifndef __KOS__
 	execvp(saved_argv[0], saved_argv);
+#endif
 	zlog(ZLOG_SYSERROR, "failed to reload: execvp() failed");
 	exit(FPM_EXIT_SOFTWARE);
 }

@@ -34,6 +34,7 @@
 #ifdef ZEND_WIN32
 # include <Winuser.h>
 #endif
+#include <string.h>
 #include "zend_alloc.h"
 #include <zend_language_parser.h>
 #include "zend_compile.h"

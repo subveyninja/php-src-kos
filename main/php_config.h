@@ -592,7 +592,7 @@
 /* #undef HAVE_EXPLICIT_BZERO */
 
 /* Define to 1 if you have the `explicit_memset' function. */
-#define HAVE_EXPLICIT_MEMSET 1
+/* #undef HAVE_EXPLICIT_MEMSET */
 
 /* Define to 1 if you have the `fabsf' function. */
 /* #undef HAVE_FABSF */
@@ -682,13 +682,13 @@
 /* #undef HAVE_FUNC_GETHOSTBYNAME_R_6 */
 
 /* Define to 1 if you have the `funopen' function. */
-#define HAVE_FUNOPEN 1
+/* #undef HAVE_FUNOPEN */
 
 /* Define to 1 if you have the `gai_strerror' function. */
 #define HAVE_GAI_STRERROR 1
 
 /* Define if the target system has support for global register variables */
-#define HAVE_GCC_GLOBAL_REGS 1
+/* #define HAVE_GCC_GLOBAL_REGS 1 */
 
 /* Whether you have gcov */
 /* #undef HAVE_GCOV */
@@ -931,7 +931,7 @@
 /* #undef HAVE_JIT */
 
 /* whether to enable JavaScript Object Serialization support */
-#define HAVE_JSON 1 
+#define HAVE_JSON 1
 
 /* Define to 1 if you have the `kill' function. */
 #define HAVE_KILL 1

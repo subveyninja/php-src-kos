@@ -1706,7 +1706,11 @@ CWD_API FILE *virtual_popen(const char *command, const char *type) /* {{{ */
 	*ptr++ = ' ';
 
 	memcpy(ptr, command, command_length+1);
+#ifndef __KOS__
 	retval = popen(command_line, type);
+#else
+	retval = NULL;
+#endif
 
 	efree(command_line);
 	return retval;

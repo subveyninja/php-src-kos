@@ -2,6 +2,7 @@ project (einit)
 
 # Toolkit for working with NK parser.
 include (platform/image)
+include (${KL_SDK_ROOT_PATH}/common/build-sd-image.cmake)
 
 # Set compilation flags.
 project_header_default ("STANDARD_GNU_11:YES" "STRICT_WARNINGS:NO")
@@ -15,7 +16,7 @@ set (ENTITIES
 	${rump_DHCPCD_ENTITY})
 
 if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "aarch64")
-    set (SECURITY_PSL_FILE "src/security.psl")
+    set (SECURITY_PSL_FILE "src/security.psl.in")
 else ()
     message (FATAL_ERROR "${CMAKE_SYSTEM_PROCESSOR} architecture is not supported." )
 endif ()
@@ -36,7 +37,7 @@ else()
     set (FILES ${CMAKE_BINARY_DIR}/einit/${DISK_IMAGE})
 endif()
 
-# Information about selected configuration files sourse
+# Information about selected configuration files source.
 message ("Used DHCP client daemon configuration from ${ROOTFS_DEVICE}:/etc/dhcpcd.conf")
 message ("Used NTP client daemon configuration from ${ROOTFS_DEVICE}:/etc/ntp.conf")
 
@@ -76,9 +77,15 @@ add_custom_target (${DISK_IMAGE}
 build_kos_hw_image (kos-image
                     EINIT_ENTITY EinitHw
                     CONNECTIONS_CFG "src/init.yaml.in"
-                    SECURITY_PSL "src/security.psl"
+                    SECURITY_PSL "src/security.psl.in"
                     IMAGE_FILES ${ENTITIES}
                                 ${FILES})
+
+# Create a top-level CMake target named sd-image which can be used
+# when building an SD card image to be started on the hardware platform.
+build_sd_image (sd-image
+                KOS_IMAGE_TARGET kos-image
+                IMAGE_FS ${IMAGE_FS})
 
 # KasperskyOS image depends on disk image generation only if ramdisk used
 if (NOT ROOTFS_SDCARD)

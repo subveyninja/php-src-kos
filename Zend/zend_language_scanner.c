@@ -32,6 +32,7 @@
 #include "zend_language_scanner_defs.h"
 
 #include <errno.h>
+#include <strings.h>
 #include "zend.h"
 #ifdef ZEND_WIN32
 # include <Winuser.h>

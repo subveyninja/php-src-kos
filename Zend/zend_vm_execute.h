@@ -52322,6 +52322,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NULL_HANDLER(ZEND_OPCODE_HANDL
 # pragma GCC optimize("no-gcse")
 # pragma GCC optimize("no-ivopts")
 #endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type"
+#endif
 ZEND_API void execute_ex(zend_execute_data *ex)
 {
 	DCL_OPLINE
@@ -55811,9 +55815,11 @@ ZEND_API void execute_ex(zend_execute_data *ex)
 #ifdef ZEND_VM_HYBRID_JIT_RED_ZONE_SIZE
 		memset(vm_stack_data.hybrid_jit_red_zone, 0, ZEND_VM_HYBRID_JIT_RED_ZONE_SIZE);
 #endif
+#if defined(ZEND_VM_IP_GLOBAL_REG) || defined(ZEND_VM_FP_GLOBAL_REG)
 		if (zend_touch_vm_stack_data) {
 			zend_touch_vm_stack_data(&vm_stack_data);
 		}
+#endif
 		goto HYBRID_HALT_LABEL;
 	}
 #endif
@@ -60374,6 +60380,9 @@ zend_leave_helper_SPEC_LABEL:
 	}
 	zend_error_noreturn(E_CORE_ERROR, "Arrived at end of main loop which shouldn't happen");
 }
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #if (ZEND_VM_KIND != ZEND_VM_KIND_CALL) && (ZEND_GCC_VERSION >= 4000) && !defined(__clang__)
 # pragma GCC pop_options
 #endif

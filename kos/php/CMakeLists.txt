@@ -21,6 +21,9 @@ endif ()
 
 get_filename_component(PHP_SRC_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
 
+get_filename_component(THIRD_PARTY_ROOT_DIR  "${CMAKE_CURRENT_LIST_DIR}/../../third_party" ABSOLUTE)
+set(OPENSSL_ROOT_DIR ${THIRD_PARTY_ROOT_DIR}/openssl)
+
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-aliasing")
 
@@ -29,6 +32,7 @@ include_directories(
     ${PHP_SRC_ROOT}/main
     ${PHP_SRC_ROOT}/TSRM
     ${PHP_SRC_ROOT}/Zend
+	${OPENSSL_ROOT_DIR}/include
 )
 
 if (KOS)
